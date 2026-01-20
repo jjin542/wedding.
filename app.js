@@ -15,7 +15,11 @@ function setDrawerOpen(open) {
   drawerState.open = open;
   const overlay = qs("#drawerOverlay");
   const panel = qs("#drawerPanel");
-  if (!overlay || !panel) return;
+  // 로그인 화면 등에서 drawer DOM이 없을 수 있음
+  if (!overlay || !panel) {
+    if (!open) drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
+    return;
+  }
 
   if (open) {
     overlay.classList.remove("opacity-0", "pointer-events-none");
@@ -86,7 +90,7 @@ async function renderDrawer() {
   const { kind, id, projectId } = drawerState;
   const titleEl = qs("#drawerTitle");
   const contentEl = qs("#drawerContent");
-  if (!contentEl) return;
+  if (!titleEl || !contentEl) return;
 
   if (kind === "timeline_event") {
     titleEl.textContent = "행사일정 편집";
@@ -467,10 +471,11 @@ function layoutShell(userEmail) {
     await supabase.auth.signOut();
     render();
   };
-}
   // ✅ drawer close handlers (DOM 만든 뒤 여기서만)
-  qs("#drawerOverlay").onclick = closeDrawer;
-  qs("#drawerClose").onclick = closeDrawer;
+  const overlay = qs("#drawerOverlay");
+  const closeBtn = qs("#drawerClose");
+  if (overlay) overlay.onclick = closeDrawer;
+  if (closeBtn) closeBtn.onclick = closeDrawer;
 
   // ESC 핸들러는 중복 등록 방지
   if (!window.__drawerEscBound) {
@@ -479,6 +484,7 @@ function layoutShell(userEmail) {
       if (e.key === "Escape") closeDrawer();
     });
   }
+}
 
 
 function loginView() {
@@ -1073,3 +1079,4 @@ async function render() {
 window.addEventListener("hashchange", render);
 render();
  
+
