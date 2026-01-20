@@ -1062,6 +1062,8 @@ const NAV = [
   { route: "/checklist", label: "체크리스트", icon: "checklist" },
   { route: "/budget", label: "예산", icon: "wallet" },
   { route: "/notes", label: "메모", icon: "note" },
+  { route: "/timeline-calendar", label: "달력", icon: "calendar" },
+
 ];
 
 function layoutShell(userEmail) {
@@ -2501,6 +2503,8 @@ async function render() {
   if (r === "/checklist") return checklistPage(projectId);
   if (r === "/budget") return budgetPage(projectId);
   if (r === "/notes") return notesPage(projectId);
+  if (r === "/timeline-calendar") return timelineCalendarPage(projectId);
+
 
   location.hash = "#/overview";
 }
@@ -2510,3 +2514,123 @@ window.addEventListener("hashchange", () => {
   render();
 });
 render();
+
+async function timelineCalendarPage(projectId) {
+  const page = qs("#page");
+
+  page.innerHTML = `
+    ${header("전체 일정 달력", "9개월 한눈에 보기")}
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="calendarGrid"></div>
+  `;
+
+  // 보여줄 9개월 (예: 2026-01 ~ 2026-09)
+  const YEAR = 2026;
+  const START_MONTH = 1;
+
+  const months = Array.from({ length: 9 }, (_, i) => {
+    const month = START_MONTH + i;
+    return {
+      year: YEAR,
+      month,
+      key: `${YEAR}-${String(month).padStart(2, "0")}`,
+      label: new Date(YEAR, month - 1).toLocaleString("en-US", {
+        month: "long",
+      }),
+    };
+  });
+
+  // 날짜별 이벤트 개수 가져오기
+  const { data: days } = await supabase
+    .from("timeline_days")
+    .select(`
+      id,
+      date,
+      timeline_events ( id )
+    `)
+    .eq("project_id", projectId);
+
+  const countByDate = new Map();
+  (days || []).forEach((d) => {
+    if (!d.date) return;
+    countByDate.set(d.date, (d.timeline_events || []).length);
+  });
+
+  const grid = qs("#calendarGrid");
+
+  grid.innerHTML = months
+    .map((m) => renderMonthCalendar(m, countByDate))
+    .join("");
+
+  // 날짜 클릭 → Day 타임라인 이동
+  qsa("[data-date]").forEach((el) => {
+    el.onclick = () => {
+      const date = el.dataset.date;
+      location.hash = "#/timeline";
+      // 나중에 ?date=YYYY-MM-DD 필터링도 가능
+    };
+  });
+}
+function renderMonthCalendar(month, countByDate) {
+  const { year, month: m, label } = month;
+
+  const firstDay = new Date(year, m - 1, 1);
+  const startWeekDay = (firstDay.getDay() + 6) % 7; // Mon=0
+  const daysInMonth = new Date(year, m, 0).getDate();
+
+  const cells = [];
+
+  // 앞 빈칸
+  for (let i = 0; i < startWeekDay; i++) {
+    cells.push(`<div></div>`);
+  }
+
+  // 날짜
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateKey = `${year}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const count = countByDate.get(dateKey) || 0;
+
+    cells.push(`
+      <div
+        data-date="${dateKey}"
+        class="relative h-[36px] rounded-full
+               bg-white/70 border border-white
+               flex items-center justify-center
+               text-[12px] text-slate-700
+               hover:bg-white/90 transition cursor-pointer">
+
+        ${d}
+
+        ${
+          count > 0
+            ? `<span class="absolute -top-1 -right-1
+                     w-4 h-4 rounded-full
+                     bg-[#7C5CFF]
+                     text-white text-[10px]
+                     flex items-center justify-center">
+                 ${count}
+               </span>`
+            : ""
+        }
+      </div>
+    `);
+  }
+
+  return `
+    <div class="${UI.card} p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-[14px] font-semibold text-slate-900">${label}</div>
+        <div class="text-[11px] text-slate-400">${year}</div>
+      </div>
+
+      <div class="grid grid-cols-7 text-[10px] text-slate-400 text-center mb-1">
+        <div>Mon</div><div>Tue</div><div>Wed</div>
+        <div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+      </div>
+
+      <div class="grid grid-cols-7 gap-1">
+        ${cells.join("")}
+      </div>
+    </div>
+  `;
+}
+
