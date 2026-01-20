@@ -149,6 +149,11 @@ const UI = {
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
     "text-[12px] font-bold text-white bg-accent " +
     "hover:brightness-[0.98] transition shadow-[0_18px_55px_rgba(47,91,255,0.18)]",
+  btnDanger:
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[12px] font-bold text-white bg-rose-500 " +
+    "hover:brightness-[0.98] transition shadow-[0_18px_55px_rgba(244,63,94,0.18)]",
+
 
   input:
     "w-full rounded-2xl border border-white/85 bg-white/75 px-4 py-3 " +
@@ -166,6 +171,10 @@ const UI = {
   pillAccent:
     "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
     "text-[11px] font-medium text-ink chip-accent border border-white/80",
+  pillStrong:
+    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
+    "text-[11px] font-semibold text-white bg-accent border border-white/70",
+
 
   bubble:
     "relative w-full text-left rounded-[24px] p-4 sm:p-[18px] " +
@@ -568,6 +577,147 @@ async function renderDrawer() {
     return;
   }
 
+
+
+  if (kind === "checklist_task") {
+    titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("checklist", true), true)}<span class="text-[13px] font-semibold text-slate-900">상위 할 일 편집</span></div>`;
+
+    const [{ data: t, error: e1 }, { data: sections, error: e2 }] = await Promise.all([
+      supabase.from("checklist_tasks").select("*").eq("id", id).single(),
+      supabase.from("checklist_sections").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
+    ]);
+    if (e1 || e2) {
+      contentEl.innerHTML = isMissingTable(e1 || e2)
+        ? missingTableCard(isMissingTable(e1) ? "checklist_tasks" : "checklist_sections")
+        : `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = `
+      <div class="space-y-4">
+        <div>
+          <div class="${UI.label} mb-1">제목</div>
+          <input id="ckt_title" class="${UI.input}" value="${escapeHtml(t.title || "")}" />
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">섹션</div>
+          <select id="ckt_section" class="${UI.input}">
+            ${(sections ?? [])
+              .map((s) => `<option value="${s.id}" ${s.id === t.section_id ? "selected" : ""}>${escapeHtml(s.title)}</option>`)
+              .join("")}
+          </select>
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">마감일(선택)</div>
+          <input id="ckt_due" type="date" class="${UI.input}" value="${t.due_date ?? ""}" />
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="ckt_notes" class="${UI.textarea}" rows="5">${escapeHtml(t.notes || "")}</textarea>
+        </div>
+
+        <label class="flex items-center gap-2 text-[12.5px] text-slate-900/85">
+          <input id="ckt_collapsed" type="checkbox" ${t.is_collapsed ? "checked" : ""} />
+          접어두기
+        </label>
+
+        <div class="flex items-center justify-between pt-2">
+          <button id="ckt_delete" class="${UI.btnDanger}">삭제</button>
+          <button id="ckt_close" class="${UI.btnPrimary}">완료</button>
+        </div>
+      </div>
+    `;
+
+    bindSave("#ckt_title", (el) => safeUpdate("checklist_tasks", id, { title: el.value }));
+    bindSave("#ckt_section", (el) => safeUpdate("checklist_tasks", id, { section_id: el.value }));
+    bindSave("#ckt_due", (el) => safeUpdate("checklist_tasks", id, { due_date: el.value || null }));
+    bindSave("#ckt_notes", (el) => safeUpdate("checklist_tasks", id, { notes: el.value || null }));
+    bindSave("#ckt_collapsed", (el) => safeUpdate("checklist_tasks", id, { is_collapsed: el.checked }));
+
+    qs("#ckt_close").onclick = closeDrawer;
+    qs("#ckt_delete").onclick = async () => {
+      const ok = await confirmModal({
+        title: "상위 할 일 삭제",
+        message: "이 상위 할 일을 삭제할까? 연결된 하위 할 일도 같이 지워질 수 있어.",
+        okText: "삭제",
+        cancelText: "취소",
+        danger: true,
+      });
+      if (!ok) return;
+      await supabase.from("checklist_tasks").delete().eq("id", id);
+      closeDrawer();
+    };
+
+    setDrawerStatus("열림");
+    return;
+  }
+
+  if (kind === "checklist_subtask") {
+    titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("checklist", true), true)}<span class="text-[13px] font-semibold text-slate-900">하위 할 일 편집</span></div>`;
+
+    const [{ data: st, error: e1 }, { data: tasks, error: e2 }] = await Promise.all([
+      supabase.from("checklist_subtasks").select("*").eq("id", id).single(),
+      supabase.from("checklist_tasks").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
+    ]);
+    if (e1 || e2) {
+      contentEl.innerHTML = isMissingTable(e1 || e2)
+        ? missingTableCard(isMissingTable(e1) ? "checklist_subtasks" : "checklist_tasks")
+        : `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = `
+      <div class="space-y-4">
+        <div>
+          <div class="${UI.label} mb-1">제목</div>
+          <input id="cks_title" class="${UI.input}" value="${escapeHtml(st.title || "")}" />
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">상위 할 일</div>
+          <select id="cks_task" class="${UI.input}">
+            ${(tasks ?? [])
+              .map((t) => `<option value="${t.id}" ${t.id === st.task_id ? "selected" : ""}>${escapeHtml(t.title || "(제목 없음)")}</option>`)
+              .join("")}
+          </select>
+        </div>
+
+        <label class="flex items-center gap-2 text-[12.5px] text-slate-900/85">
+          <input id="cks_done" type="checkbox" ${st.is_done ? "checked" : ""} />
+          완료
+        </label>
+
+        <div class="flex items-center justify-between pt-2">
+          <button id="cks_delete" class="${UI.btnDanger}">삭제</button>
+          <button id="cks_close" class="${UI.btnPrimary}">완료</button>
+        </div>
+      </div>
+    `;
+
+    bindSave("#cks_title", (el) => safeUpdate("checklist_subtasks", id, { title: el.value }));
+    bindSave("#cks_task", (el) => safeUpdate("checklist_subtasks", id, { task_id: el.value }));
+    bindSave("#cks_done", (el) => safeUpdate("checklist_subtasks", id, { is_done: el.checked }));
+
+    qs("#cks_close").onclick = closeDrawer;
+    qs("#cks_delete").onclick = async () => {
+      const ok = await confirmModal({
+        title: "하위 할 일 삭제",
+        message: "이 하위 할 일을 삭제할까? 되돌릴 수 없어.",
+        okText: "삭제",
+        cancelText: "취소",
+        danger: true,
+      });
+      if (!ok) return;
+      await supabase.from("checklist_subtasks").delete().eq("id", id);
+      closeDrawer();
+    };
+
+    setDrawerStatus("열림");
+    return;
+  }
   if (kind === "budget_item") {
     titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("wallet", true), true)}<span class="text-[13px] font-semibold text-slate-900">예산 항목 편집</span></div>`;
 
@@ -1482,7 +1632,7 @@ async function timelinePage(projectId) {
   await load();
 }
 
-async function checklistPage(projectId) {
+async function checklistPageV1(projectId) {
   const page = qs("#page");
   page.innerHTML = `
     ${header("체크리스트", "체크는 바로, 편집은 버블 클릭", `<button id="addItem" class="${UI.btnPrimary}">추가</button>`)}
@@ -1664,6 +1814,298 @@ async function checklistPage(projectId) {
   window.__cleanup = () => supabase.removeChannel(ch);
 
   await load();
+}
+
+
+// ---------- Checklist v2 (Parent task + Subtasks + progress) ----------
+async function checklistPageV2(projectId) {
+  const page = qs("#page");
+  page.innerHTML = `
+    ${header("체크리스트", "상위 할 일 · 하위 할 일 · 진행률", `<button id="ck_add_task" class="${UI.btnPrimary}">작업 추가</button>`)}
+    <div class="mt-4 space-y-4" id="ck_sections"></div>
+  `;
+
+  async function ensureSectionsTemplate() {
+    const { data, error } = await supabase.from("checklist_sections").select("id").eq("project_id", projectId).limit(1);
+    if (error) return;
+    if (data && data.length > 0) return;
+    const defaults = ["6개월 전", "3개월 전", "1개월 전", "2주 전", "1주 전", "당일"];
+    await supabase.from("checklist_sections").insert(defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i })));
+  }
+
+  async function load() {
+    await ensureSectionsTemplate();
+
+    const { data: sections, error: se } = await supabase
+      .from("checklist_sections")
+      .select("id,title,sort_order")
+      .eq("project_id", projectId)
+      .order("sort_order");
+
+    if (se) {
+      qs("#ck_sections").innerHTML = isMissingTable(se)
+        ? missingTableCard("checklist_sections")
+        : `<div class="text-sm text-rose-700">${escapeHtml(se.message)}</div>`;
+      return;
+    }
+
+    const { data: tasks, error: te } = await supabase
+      .from("checklist_tasks")
+      .select("id,section_id,title,due_date,notes,is_collapsed,sort_order")
+      .eq("project_id", projectId)
+      .order("sort_order");
+
+    if (te) {
+      qs("#ck_sections").innerHTML = isMissingTable(te)
+        ? `
+          <div class="${UI.bubble}">
+            <div class="flex items-start gap-3">
+              <div class="shrink-0">${iconBadge(iconSvg("checklist", true), true)}</div>
+              <div class="min-w-0">
+                <div class="text-[13.5px] font-semibold text-slate-900">체크리스트 v2 테이블이 없어</div>
+                <div class="${UI.sub} mt-1">Supabase에 <b>checklist_tasks</b>, <b>checklist_subtasks</b> 테이블을 추가하면, 상위/하위 구조 + 진행률 UI가 켜져.</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 ${UI.sub}">현재는 기존(단일 목록) 모드로 보여줄게.</div>
+        `
+        : `<div class="text-sm text-rose-700">${escapeHtml(te.message)}</div>`;
+      // fallback to v1
+      return checklistPageV1(projectId);
+    }
+
+    const { data: subs, error: ue } = await supabase
+      .from("checklist_subtasks")
+      .select("id,task_id,title,is_done,sort_order")
+      .eq("project_id", projectId)
+      .order("sort_order");
+
+    if (ue) {
+      qs("#ck_sections").innerHTML = isMissingTable(ue)
+        ? missingTableCard("checklist_subtasks")
+        : `<div class="text-sm text-rose-700">${escapeHtml(ue.message)}</div>`;
+      return;
+    }
+
+    const tasksBySection = new Map();
+    (tasks || []).forEach((t) => {
+      if (!tasksBySection.has(t.section_id)) tasksBySection.set(t.section_id, []);
+      tasksBySection.get(t.section_id).push(t);
+    });
+
+    const subsByTask = new Map();
+    (subs || []).forEach((st) => {
+      if (!subsByTask.has(st.task_id)) subsByTask.set(st.task_id, []);
+      subsByTask.get(st.task_id).push(st);
+    });
+
+    const renderTask = (t) => {
+      const list = subsByTask.get(t.id) || [];
+      const done = list.filter((x) => x.is_done).length;
+      const total = list.length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      const collapsed = !!t.is_collapsed;
+
+      return `
+        <div class="rounded-[24px] overflow-hidden border border-white/85 bg-white/60">
+          <div class="p-4 sm:p-[18px] ${pct === 100 ? "bg-[rgba(241,251,153,0.25)]" : ""}">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <label class="shrink-0 mt-0.5">
+                  <input type="checkbox" data-task-toggle-all="${t.id}" ${total>0 && done===total ? "checked" : ""} ${total===0 ? "disabled" : ""} />
+                </label>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <div class="text-[13.5px] font-semibold text-slate-900 truncate">${escapeHtml(t.title || "제목")}</div>
+                    <span class="${UI.pill}">${done}/${total}</span>
+                    ${t.due_date ? `<span class="${UI.pill}">${escapeHtml(t.due_date)}</span>` : ``}
+                  </div>
+                  <div class="mt-2 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
+                    <div class="h-full bg-[#6186E4]" style="width:${pct}%;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="${UI.btnSm}" data-task-edit="${t.id}">⋮</button>
+                <button class="${UI.btnSm}" data-task-collapse="${t.id}">${collapsed ? "▾" : "▴"}</button>
+              </div>
+            </div>
+
+            ${collapsed ? "" : `
+              <div class="mt-4 space-y-2" data-task-body="${t.id}">
+                ${
+                  total === 0
+                    ? `<div class="${UI.sub}">하위 할 일이 없어. ‘하위 작업 추가’를 눌러봐.</div>`
+                    : list
+                        .map(
+                          (st) => `
+                            <div class="flex items-center justify-between gap-3 p-3 rounded-[20px] bg-white/55 border border-white/70 hover:bg-white/80 transition" data-sub-open="${st.id}">
+                              <label class="flex items-center gap-3 flex-1 cursor-pointer">
+                                <input type="checkbox" data-sub-toggle="${st.id}" ${st.is_done ? "checked" : ""} />
+                                <div class="min-w-0">
+                                  <div class="text-[12.5px] font-semibold text-slate-900 ${st.is_done ? "line-through opacity-60" : ""}">${escapeHtml(st.title)}</div>
+                                </div>
+                              </label>
+                              <button class="${UI.btnSm}" data-sub-edit="${st.id}">편집</button>
+                            </div>
+                          `
+                        )
+                        .join("")
+                }
+
+                <div class="pt-1">
+                  <button class="${UI.btnSm}" data-sub-add="${t.id}">＋ 하위 작업 추가</button>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    };
+
+    qs("#ck_sections").innerHTML = (sections || [])
+      .map((s) => {
+        const list = tasksBySection.get(s.id) || [];
+        return `
+          <div class="${UI.bubble}">
+            <div class="${UI.bubbleOverlay}" style="${bubbleOverlayStyle()}"></div>
+            <div class="relative flex items-center justify-between gap-3">
+              <div class="text-[13.5px] font-semibold text-slate-900">${escapeHtml(s.title)}</div>
+              <button class="${UI.btnSm}" data-task-add="${s.id}">작업 추가</button>
+            </div>
+
+            <div class="relative mt-4 space-y-3">
+              ${list.length ? list.map(renderTask).join("") : `<div class="${UI.sub}">상위 할 일이 없어. ‘작업 추가’를 눌러봐.</div>`}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    // add task
+    qsa("#ck_sections button[data-task-add]").forEach((btn) => {
+      btn.onclick = async () => {
+        const sectionId = btn.dataset.taskAdd;
+        const ins = await supabase
+          .from("checklist_tasks")
+          .insert({ project_id: projectId, section_id: sectionId, title: "새 상위 할 일", sort_order: Date.now(), is_collapsed: false })
+          .select("id")
+          .single();
+        if (ins.error) {
+          await confirmModal({ title: "추가 실패", message: ins.error.message, okText: "닫기" });
+          return;
+        }
+        openDrawer("checklist_task", { id: ins.data.id, projectId });
+      };
+    });
+
+    // collapse
+    qsa("#ck_sections button[data-task-collapse]").forEach((btn) => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.taskCollapse;
+        const t = (tasks || []).find((x) => x.id === id);
+        const next = !t?.is_collapsed;
+        await supabase.from("checklist_tasks").update({ is_collapsed: next }).eq("id", id);
+      };
+    });
+
+    // edit task
+    qsa("#ck_sections button[data-task-edit]").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openDrawer("checklist_task", { id: btn.dataset.taskEdit, projectId });
+      };
+    });
+
+    // add subtask
+    qsa("#ck_sections button[data-sub-add]").forEach((btn) => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const taskId = btn.dataset.subAdd;
+        const ins = await supabase
+          .from("checklist_subtasks")
+          .insert({ project_id: projectId, task_id: taskId, title: "새 하위 할 일", is_done: false, sort_order: Date.now() })
+          .select("id")
+          .single();
+        if (ins.error) {
+          await confirmModal({ title: "추가 실패", message: ins.error.message, okText: "닫기" });
+          return;
+        }
+        openDrawer("checklist_subtask", { id: ins.data.id, projectId });
+      };
+    });
+
+    // toggle subtask
+    qsa("#ck_sections input[data-sub-toggle]").forEach((cb) => {
+      cb.onclick = (e) => e.stopPropagation();
+      cb.onchange = async () => {
+        const id = cb.dataset.subToggle;
+        await supabase.from("checklist_subtasks").update({ is_done: cb.checked }).eq("id", id);
+      };
+    });
+
+    // open subtask drawer
+    qsa("#ck_sections [data-sub-open]").forEach((row) => {
+      row.onclick = () => openDrawer("checklist_subtask", { id: row.dataset.subOpen, projectId });
+    });
+
+    // edit subtask
+    qsa("#ck_sections button[data-sub-edit]").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openDrawer("checklist_subtask", { id: btn.dataset.subEdit, projectId });
+      };
+    });
+
+    // toggle all subtasks by task checkbox
+    qsa("#ck_sections input[data-task-toggle-all]").forEach((cb) => {
+      cb.onclick = (e) => e.stopPropagation();
+      cb.onchange = async () => {
+        const taskId = cb.dataset.taskToggleAll;
+        await supabase.from("checklist_subtasks").update({ is_done: cb.checked }).eq("task_id", taskId);
+      };
+    });
+  }
+
+  // top add (first section)
+  qs("#ck_add_task").onclick = async () => {
+    const { data: sec } = await supabase.from("checklist_sections").select("id").eq("project_id", projectId).order("sort_order").limit(1);
+    const sectionId = sec?.[0]?.id;
+    if (!sectionId) {
+      await confirmModal({ title: "섹션이 없어", message: "먼저 checklist_sections 템플릿이 필요해.", okText: "닫기" });
+      return;
+    }
+    const ins = await supabase
+      .from("checklist_tasks")
+      .insert({ project_id: projectId, section_id: sectionId, title: "새 상위 할 일", sort_order: Date.now(), is_collapsed: false })
+      .select("id")
+      .single();
+    if (ins.error) {
+      await confirmModal({ title: "추가 실패", message: ins.error.message, okText: "닫기" });
+      return;
+    }
+    openDrawer("checklist_task", { id: ins.data.id, projectId });
+  };
+
+  const ch = supabase
+    .channel("checklist_v2")
+    .on("postgres_changes", { event: "*", schema: "public", table: "checklist_sections", filter: `project_id=eq.${projectId}` }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "checklist_tasks", filter: `project_id=eq.${projectId}` }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "checklist_subtasks", filter: `project_id=eq.${projectId}` }, load)
+    .subscribe();
+
+  window.__cleanup?.();
+  window.__cleanup = () => supabase.removeChannel(ch);
+
+  await load();
+}
+
+// Wrapper: prefer v2 when tables exist, otherwise fallback to v1
+async function checklistPage(projectId) {
+  // try v2 first (it will fallback internally if tables are missing)
+  return checklistPageV2(projectId);
 }
 
 async function budgetPage(projectId) {
