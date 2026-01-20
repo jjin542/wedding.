@@ -468,6 +468,17 @@ function layoutShell(userEmail) {
     render();
   };
 }
+  // ✅ drawer close handlers (DOM 만든 뒤 여기서만)
+  qs("#drawerOverlay").onclick = closeDrawer;
+  qs("#drawerClose").onclick = closeDrawer;
+
+  // ESC 핸들러는 중복 등록 방지
+  if (!window.__drawerEscBound) {
+    window.__drawerEscBound = true;
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDrawer();
+    });
+  }
 
 
 function loginView() {
@@ -851,8 +862,6 @@ async function checklistPage(projectId) {
   await load();
 }
 
-
-
 async function budgetPage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
@@ -868,22 +877,25 @@ async function budgetPage(projectId) {
     <div class="mt-4 space-y-4" id="cats"></div>
   `;
 
-  //async function ensureTemplate() {
-    const { data } = await supabase
+  // ✅ 템플릿 보장(카테고리 없으면 기본 생성)
+  async function ensureTemplate() {
+    const { data, error } = await supabase
       .from("budget_categories")
       .select("id")
       .eq("project_id", projectId)
       .limit(1);
 
+    if (error) throw error;
     if (data && data.length > 0) return;
 
     const defaults = ["예식장", "스드메", "스냅/영상", "부케/플라워", "청첩장", "기타"];
-    await supabase.from("budget_categories").insert(
+    const ins = await supabase.from("budget_categories").insert(
       defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i }))
     );
+    if (ins.error) throw ins.error;
   }
 
-  function n(x){ const v = Number(x); return Number.isFinite(v) ? v : 0; }
+  function n(x) { const v = Number(x); return Number.isFinite(v) ? v : 0; }
 
   async function load() {
     await ensureTemplate();
@@ -935,6 +947,7 @@ async function budgetPage(projectId) {
     qs("#cats").innerHTML = (cats || []).map(c => {
       const list = byCat.get(c.id) || [];
       const catTotal = list.reduce((a,it)=>a+n(it.actual),0);
+
       return `
         <div class="${UI.card} rounded-3xl p-4 md:p-5">
           <div class="flex items-center justify-between">
@@ -973,7 +986,6 @@ async function budgetPage(projectId) {
       `;
     }).join("");
 
-    // add in category
     qs("#cats").querySelectorAll("button[data-add]").forEach(btn => {
       btn.onclick = async () => {
         const categoryId = btn.dataset.add;
@@ -991,7 +1003,6 @@ async function budgetPage(projectId) {
       };
     });
 
-    // open drawer
     qs("#cats").querySelectorAll("button[data-open]").forEach(btn => {
       btn.onclick = () => openDrawer("budget_item", { id: btn.dataset.open, projectId });
     });
@@ -1033,6 +1044,9 @@ async function budgetPage(projectId) {
   await load();
 }
 
+
+
+
 async function render() {
   await ensureAuthFromUrl();
 
@@ -1058,12 +1072,4 @@ async function render() {
 
 window.addEventListener("hashchange", render);
 render();
-  // drawer close handlers
-  // ✅ drawer close handlers (여기서만!)
-  qs("#drawerOverlay").onclick = closeDrawer;
-  qs("#drawerClose").onclick = closeDrawer;
-
-  // ESC로 닫기(선택)
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeDrawer();
-  }, { once: true });
+ 
