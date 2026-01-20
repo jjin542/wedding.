@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>우리 플래너</title>
+    <title>Planner</title>
 
     <!-- Tailwind CDN -->
     <script>
@@ -12,12 +12,21 @@
           theme: {
             extend: {
               colors: {
+                spring: "#F1FB99",
+                twilight: "#6186E4",
+                ink: "#0F172A",
                 brand: {
-                  50: "#F5F3FF",
-                  100: "#EDE9FE",
-                  500: "#7C3AED",
-                  600: "#6D28D9",
+                  50: "#F6F9FF",
+                  100: "#ECF2FF",
+                  500: "#6186E4",
+                  600: "#4F74D8",
                 },
+              },
+              boxShadow: {
+                soft: "0 20px 70px rgba(97,134,228,0.18), 0 12px 28px rgba(0,0,0,0.10)",
+              },
+              borderRadius: {
+                xl3: "1.75rem",
               },
             },
           },
@@ -27,12 +36,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+      @font-face {
+        font-family: 'NostalgicMongtori';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-1@1.0/Griun_Mongtori-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+      }
       html, body { height: 100%; }
-      /* 살짝 노이즈 */
+      body { font-family: NostalgicMongtori, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+      /* 살짝 ‘노이즈’ 느낌(선택) */
       .noise {
         background-image: radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px);
         background-size: 18px 18px;
-        opacity: 0.25;
+        opacity: 0.18;
         pointer-events: none;
       }
     </style>
@@ -40,7 +57,7 @@
 
   <body class="min-h-screen">
     <!-- 배경 그라데이션 -->
-    <div class="min-h-screen bg-gradient-to-br from-[#F3E8FF] via-[#E0F2FE] to-[#FCE7F3]">
+    <div class="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(241,251,153,0.95)_0%,_rgba(241,251,153,0.55)_30%,_rgba(255,255,255,0.55)_55%,_rgba(97,134,228,0.35)_80%,_rgba(97,134,228,0.65)_100%)]">
       <div class="noise fixed inset-0"></div>
       <div id="app"></div>
     </div>
