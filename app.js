@@ -39,9 +39,25 @@ function escapeHtml(s) {
 }
 
 function isMissingTable(err) {
-  const msg = String(err?.message || "");
-  return msg.includes("42P01") || msg.toLowerCase().includes("does not exist") || msg.toLowerCase().includes("relation");
+  const code = String(err?.code || "");         // Supabase가 주는 PG code
+  const msg = String(err?.message || "").toLowerCase();
+
+  // 진짜 "테이블 없음"만 잡기
+  if (code === "42P01") return true; // undefined_table
+
+  // PostgREST / Supabase 메시지 케이스들
+  if (msg.includes("does not exist")) return true;
+  if (msg.includes("undefined_table")) return true;
+
+  // "relation xxx does not exist" 같은 케이스만
+  if (msg.includes("relation") && msg.includes("does not exist")) return true;
+
+  // schema cache 관련(테이블 만들어놓고 API가 못봄)
+  if (msg.includes("schema cache") && msg.includes("could not find") && msg.includes("table")) return true;
+
+  return false;
 }
+
 
 function moneyFmt(x) {
   const v = Number(x);
