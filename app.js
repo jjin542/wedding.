@@ -70,13 +70,18 @@ const PALETTE = {
 
 // ---------- Icon system // (Iconly-ish: thin, round, gradient stroke) ----------
  // (Iconly-ish: thin, round, gradient stroke) ----------
-function iconSvg(name, active) {
-  active = !!active;{
-  const strokeA = active ? PALETTE.accent : "rgba(15,23,42,0.78)";
-  const strokeB = active ? PALETTE.accent2 : "rgba(15,23,42,0.55)";
+// svg gradient id 충돌 방지용 시퀀스
+let __svgSeq = 0;
 
-  // prettier gradient id per icon usage
-  const gid = `g_${name}_${active ? "a" : "i"}`;
+// ---------- Icon system // (Iconly-ish: thin, round, gradient stroke) ----------
+function iconSvg(name, active) {
+  const isActive = !!active;
+
+  const strokeA = isActive ? PALETTE.accent : "rgba(15,23,42,0.78)";
+  const strokeB = isActive ? PALETTE.accent2 : "rgba(15,23,42,0.55)";
+
+  // ✅ 각 svg마다 고유 gid 부여 (안전)
+  const gid = `g_${name}_${isActive ? "a" : "i"}_${++__svgSeq}`;
 
   const base =
     `viewBox="0 0 24 24" width="22" height="22" fill="none" ` +
@@ -106,6 +111,7 @@ function iconSvg(name, active) {
   const body = paths[name] || paths.home;
   return `<svg ${base} aria-hidden="true">${defs}${body}</svg>`;
 }
+
 
 function iconBadge(svg, active = false) {
   // circle badge like the reference (soft + border)
@@ -1061,6 +1067,16 @@ async function getProjectId() {
   return data.id;
 }
 
+const NAV = [
+  { route: "/overview", label: "개요", icon: "home" },
+  { route: "/ceremony", label: "예식", icon: "sparkle" },
+  { route: "/vendors", label: "업체", icon: "bag" },
+  { route: "/timeline", label: "행사일정", icon: "calendar" },
+  { route: "/checklist", label: "체크리스트", icon: "checklist" },
+  { route: "/budget", label: "예산", icon: "wallet" },
+  { route: "/notes", label: "메모", icon: "note" },
+];
+
 // ---------- Layout ----------
 // (NAV already defined above)
 
@@ -1942,7 +1958,7 @@ async function checklistPageV2(projectId) {
 
     const { data: subs, error: ue } = await supabase
       .from("checklist_subtasks")
-      .select("id,task_id,title,is_done,sort_order")
+.select("id,task_id,title,is_done,sort_order,due_date,notes")
       .eq("project_id", projectId)
       .order("sort_order");
 
@@ -2010,7 +2026,15 @@ async function checklistPageV2(projectId) {
                               <label class="flex items-center gap-3 flex-1 cursor-pointer">
                                 <input type="checkbox" data-sub-toggle="${st.id}" ${st.is_done ? "checked" : ""} />
                                 <div class="min-w-0">
-                                  <div class="text-[12.5px] font-semibold text-slate-900 ${st.is_done ? "line-through opacity-60" : ""}">${escapeHtml(st.title)}</div>
+<div class="min-w-0">
+  <div class="flex items-center gap-2 flex-wrap">
+    <div class="text-[12.5px] font-semibold text-slate-900 ${st.is_done ? "line-through opacity-60" : ""}">
+      ${escapeHtml(st.title)}
+    </div>
+
+    ${st.due_date ? `<span class="${UI.pill}">D-${escapeHtml(st.due_date)}</span>` : ``}
+  </div>
+</div>
                                 </div>
                               </label>
                               <button class="${UI.btnSm}" data-sub-edit="${st.id}">편집</button>
@@ -2091,9 +2115,9 @@ async function checklistPageV2(projectId) {
         e.stopPropagation();
         const taskId = btn.dataset.subAdd;
         const ins = await supabase
-          .from("checklist_subtasks")
+.from("checklist_subtasks")
+.select("id,task_id,title,is_done,sort_order,due_date,notes")
           .insert({ project_id: projectId, task_id: taskId, title: "새 하위 할 일", is_done: false, sort_order: Date.now() })
-          .select("id")
           .single();
         if (ins.error) {
           await confirmModal({ title: "추가 실패", message: ins.error.message, okText: "닫기" });
