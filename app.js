@@ -1,21 +1,146 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = "https://ibjjbgthwmpvifbzxhwa.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliampiZ3Rod21wdmlmYnp4aHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NjExMTcsImV4cCI6MjA4NDQzNzExN30.Bb3fyGlJ_16gao6W8P0yaMotsD5DIEeTJVan3m5OKQw";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliampiZ3Rod21wdmlmYnp4aHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NjExMTcsImV4cCI6MjA4NDQzNzExN30.Bb3fyGlJ_16gao6W8P0yaMotsD5DIEeTJVan3m5OKQw";
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const app = document.getElementById("app");
 
+const UI = {
+  // layout
+  pageWrap: "min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-10",
+  shell: "w-full max-w-6xl grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:gap-5",
+
+  // glass card
+  card:
+    "backdrop-blur-2xl bg-white/65 border border-white/60 " +
+    "shadow-[0_20px_70px_rgba(124,58,237,0.15),0_12px_28px_rgba(0,0,0,0.10)] " +
+    "rounded-[28px]",
+  cardInner: "p-5 sm:p-6",
+
+  // typography
+  h1: "text-[22px] sm:text-[24px] font-semibold tracking-tight text-slate-900",
+  h2: "text-[14px] font-semibold tracking-tight text-slate-900",
+  sub: "text-[12.5px] text-slate-600/90",
+  label: "text-[12px] text-slate-600/90",
+
+  // nav
+  navLink:
+    "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl " +
+    "text-[13.5px] text-slate-700/90 hover:bg-white/55 transition",
+  navLinkActive:
+    "bg-white/70 text-slate-900 shadow-[0_8px_18px_rgba(0,0,0,0.06)] border border-white/70",
+
+  // buttons
+  btn:
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[13px] font-medium text-slate-800 " +
+    "bg-white/60 border border-white/70 hover:bg-white/80 transition " +
+    "shadow-[0_8px_20px_rgba(0,0,0,0.06)]",
+  btnSm:
+    "inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 " +
+    "text-[12px] font-medium text-slate-800 " +
+    "bg-white/60 border border-white/70 hover:bg-white/80 transition",
+  btnDanger:
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[13px] font-semibold text-rose-700 " +
+    "bg-white/60 border border-rose-200/70 hover:bg-rose-50/70 transition",
+  btnPrimary:
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[13px] font-semibold text-white " +
+    "bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 " +
+    "hover:from-violet-700 hover:via-fuchsia-600 hover:to-pink-600 transition " +
+    "shadow-[0_18px_45px_rgba(124,58,237,0.30)]",
+
+  // inputs
+  input:
+    "w-full rounded-2xl border border-white/70 bg-white/70 px-4 py-3 " +
+    "text-[13.5px] text-slate-900 placeholder:text-slate-400 " +
+    "outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-white/70",
+  textarea:
+    "w-full rounded-2xl border border-white/70 bg-white/70 px-4 py-3 " +
+    "text-[13.5px] text-slate-900 placeholder:text-slate-400 " +
+    "outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-white/70",
+
+  // pills/chips
+  pill:
+    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 " +
+    "text-[12px] text-slate-700 bg-white/60 border border-white/70",
+  pillStrong:
+    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 " +
+    "text-[12px] font-semibold text-slate-900 bg-white/75 border border-white/80",
+
+  // list row (bubble)
+  row:
+    "w-full text-left rounded-[22px] p-4 sm:p-[18px] " +
+    "bg-white/55 border border-white/70 hover:bg-white/80 transition " +
+    "shadow-[0_10px_28px_rgba(0,0,0,0.07)]",
+};
+
 function qs(sel) {
   return document.querySelector(sel);
 }
+function qsa(sel) {
+  return Array.from(document.querySelectorAll(sel));
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[c]));
+}
+
+function isAuthHash() {
+  return location.hash.startsWith("#access_token=") || location.hash.startsWith("#error=");
+}
+
+function getRoute() {
+  const h = location.hash || "#/timeline";
+  if (h.startsWith("#/")) return h.slice(1);
+  return "/timeline";
+}
+
+async function ensureAuthFromUrl() {
+  // PKCE code: ?code=...
+  const url = new URL(location.href);
+  const code = url.searchParams.get("code");
+  if (code) {
+    await supabase.auth.exchangeCodeForSession(code);
+    url.searchParams.delete("code");
+    history.replaceState({}, "", url.toString());
+  }
+
+  // hash token: #access_token=...&refresh_token=...
+  if (isAuthHash()) {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const error = params.get("error_description") || params.get("error");
+    if (error) console.error("Auth error:", error);
+
+    if (access_token && refresh_token) {
+      await supabase.auth.setSession({ access_token, refresh_token });
+    }
+    location.hash = "#/timeline";
+  }
+}
+
+// ---------- Drawer ----------
 let drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
 
 function setDrawerOpen(open) {
   drawerState.open = open;
+
   const overlay = qs("#drawerOverlay");
   const panel = qs("#drawerPanel");
-  // 로그인 화면 등에서 drawer DOM이 없을 수 있음
+
+  // DOM 없을 때도 상태는 정리
   if (!overlay || !panel) {
     if (!open) drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
     return;
@@ -44,13 +169,12 @@ function setDrawerStatus(msg) {
 
 function hhmmToTime(hhmm) {
   if (!hhmm) return null;
-  const v = hhmm.length === 5 ? `${hhmm}:00` : hhmm;
-  return v;
+  return hhmm.length === 5 ? `${hhmm}:00` : hhmm;
 }
 
 function timeToHHMM(t) {
   if (!t) return "";
-  return String(t).slice(0,5);
+  return String(t).slice(0, 5);
 }
 
 function moneyFmt(x) {
@@ -74,7 +198,11 @@ function bindSave(selector, fn) {
   const el = qs(selector);
   if (!el) return;
   const handler = async () => {
-    try { await fn(el); } catch (e) { setDrawerStatus(String(e?.message || e)); }
+    try {
+      await fn(el);
+    } catch (e) {
+      setDrawerStatus(String(e?.message || e));
+    }
   };
   el.addEventListener("change", handler);
   el.addEventListener("blur", handler);
@@ -92,74 +220,83 @@ async function renderDrawer() {
   const contentEl = qs("#drawerContent");
   if (!titleEl || !contentEl) return;
 
-  if (kind === "timeline_event") {
-    titleEl.textContent = "행사일정 편집";
+  // 공통 헤더 뱃지
+  const headerBadge = (emoji, label) =>
+    `<span class="${UI.pillStrong}">${emoji} ${escapeHtml(label)}</span>`;
 
-    // event + days(선택) 로드
-    const [{ data: ev, error: e1 }, { data: days }] = await Promise.all([
+  if (kind === "timeline_event") {
+    titleEl.innerHTML = `${headerBadge("📅", "행사일정 편집")}`;
+
+    const [{ data: ev, error: e1 }, { data: days, error: e2 }] = await Promise.all([
       supabase.from("timeline_events").select("*").eq("id", id).single(),
       supabase.from("timeline_days").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
     ]);
-    if (e1) { contentEl.innerHTML = `<div class="text-sm text-red-600">${escapeHtml(e1.message)}</div>`; return; }
+    if (e1 || e2) {
+      contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
+      return;
+    }
 
     contentEl.innerHTML = `
       <div class="space-y-4">
-        <div class="${UI.pill} w-fit">
-          <span class="text-lg">${escapeHtml(ev.icon || "⏰")}</span>
-          <span>${escapeHtml(timeToHHMM(ev.start_time))}</span>
-          <span class="opacity-70">· ${ev.duration_min || 0}m</span>
+        <div class="flex flex-wrap gap-2">
+          <span class="${UI.pillStrong}">${escapeHtml(ev.icon || "⏰")} 아이콘</span>
+          <span class="${UI.pill}">⏰ <b class="font-semibold">${escapeHtml(timeToHHMM(ev.start_time))}</b></span>
+          <span class="${UI.pill}">⏳ <b class="font-semibold">${ev.duration_min || 0}m</b></span>
+          ${ev.is_highlighted ? `<span class="${UI.pillStrong}">⭐ 중요</span>` : ""}
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">아이콘</div>
+          <div class="${UI.label} mb-1">아이콘</div>
           <select id="ev_icon" class="${UI.input}">
-            ${["⏰","📸","🍽️","💍","🎉","🚗","🏨","📍","🎤","🕯️"].map(ic =>
+            ${["⏰","📸","🍽️","💍","🎉","🚗","🏨","📍","🎤","🕯️","🧾","👗"].map(ic =>
               `<option value="${ic}" ${ic===ev.icon ? "selected" : ""}>${ic}</option>`
             ).join("")}
           </select>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">제목</div>
+          <div class="${UI.label} mb-1">제목</div>
           <input id="ev_title" class="${UI.input}" value="${escapeHtml(ev.title || "")}" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <div class="text-xs opacity-70 mb-1">시작시간</div>
+            <div class="${UI.label} mb-1">시작시간</div>
             <input id="ev_time" type="time" class="${UI.input}" value="${escapeHtml(timeToHHMM(ev.start_time))}" />
           </div>
           <div>
-            <div class="text-xs opacity-70 mb-1">소요(분)</div>
+            <div class="${UI.label} mb-1">소요(분)</div>
             <input id="ev_dur" type="number" class="${UI.input}" value="${ev.duration_min ?? 30}" min="0" />
           </div>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">Day(탭)</div>
+          <div class="${UI.label} mb-1">Day</div>
           <select id="ev_day" class="${UI.input}">
-            ${(days ?? []).map(d => `<option value="${d.id}" ${d.id===ev.day_id ? "selected":""}>${escapeHtml(d.title)}</option>`).join("")}
+            ${(days ?? []).map(d =>
+              `<option value="${d.id}" ${d.id===ev.day_id ? "selected":""}>${escapeHtml(d.title)}</option>`
+            ).join("")}
           </select>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">장소(선택)</div>
+          <div class="${UI.label} mb-1">장소(선택)</div>
           <input id="ev_loc" class="${UI.input}" value="${escapeHtml(ev.location || "")}" />
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">메모(선택)</div>
-          <textarea id="ev_notes" class="${UI.input}" rows="4">${escapeHtml(ev.notes || "")}</textarea>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="ev_notes" class="${UI.textarea}" rows="4">${escapeHtml(ev.notes || "")}</textarea>
         </div>
 
-        <label class="flex items-center gap-2 text-sm">
+        <label class="flex items-center gap-2 text-[13px] text-slate-800">
           <input id="ev_hi" type="checkbox" ${ev.is_highlighted ? "checked":""} />
-          중요(Highlight)
+          ⭐ 중요 표시
         </label>
 
         <div class="flex items-center justify-between pt-2">
-          <button id="ev_delete" class="${UI.btn}">삭제</button>
-          <button id="ev_close" class="${UI.btnPrimary}">닫기</button>
+          <button id="ev_delete" class="${UI.btnDanger}">🗑️ 삭제</button>
+          <button id="ev_close" class="${UI.btnPrimary}">완료</button>
         </div>
       </div>
     `;
@@ -168,10 +305,10 @@ async function renderDrawer() {
     bindSave("#ev_title", (el) => safeUpdate("timeline_events", id, { title: el.value }));
     bindSave("#ev_time", (el) => safeUpdate("timeline_events", id, { start_time: hhmmToTime(el.value) }));
     bindSave("#ev_dur", (el) => safeUpdate("timeline_events", id, { duration_min: Number(el.value || 0) }));
-    bindSave("#ev_day",  (el) => safeUpdate("timeline_events", id, { day_id: el.value }));
-    bindSave("#ev_loc",  (el) => safeUpdate("timeline_events", id, { location: el.value || null }));
-    bindSave("#ev_notes",(el) => safeUpdate("timeline_events", id, { notes: el.value || null }));
-    bindSave("#ev_hi",   (el) => safeUpdate("timeline_events", id, { is_highlighted: el.checked }));
+    bindSave("#ev_day", (el) => safeUpdate("timeline_events", id, { day_id: el.value }));
+    bindSave("#ev_loc", (el) => safeUpdate("timeline_events", id, { location: el.value || null }));
+    bindSave("#ev_notes", (el) => safeUpdate("timeline_events", id, { notes: el.value || null }));
+    bindSave("#ev_hi", (el) => safeUpdate("timeline_events", id, { is_highlighted: el.checked }));
 
     qs("#ev_close").onclick = closeDrawer;
     qs("#ev_delete").onclick = async () => {
@@ -179,65 +316,73 @@ async function renderDrawer() {
       await supabase.from("timeline_events").delete().eq("id", id);
       closeDrawer();
     };
+
     setDrawerStatus("열림");
     return;
   }
 
   if (kind === "checklist_item") {
-    titleEl.textContent = "체크리스트 편집";
+    titleEl.innerHTML = `${headerBadge("✅", "체크리스트 편집")}`;
 
-    const [{ data: it, error: e1 }, { data: sections }] = await Promise.all([
+    const [{ data: it, error: e1 }, { data: sections, error: e2 }] = await Promise.all([
       supabase.from("checklist_items").select("*").eq("id", id).single(),
       supabase.from("checklist_sections").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
     ]);
-    if (e1) { contentEl.innerHTML = `<div class="text-sm text-red-600">${escapeHtml(e1.message)}</div>`; return; }
+    if (e1 || e2) {
+      contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
+      return;
+    }
+
+    const sectionTitle = (sections ?? []).find(s => s.id === it.section_id)?.title || "섹션";
 
     contentEl.innerHTML = `
       <div class="space-y-4">
-        <div class="${UI.pill} w-fit">
-          <span>${it.is_done ? "✅" : "⬜"}</span>
-          <span>${escapeHtml((sections ?? []).find(s=>s.id===it.section_id)?.title || "섹션")}</span>
+        <div class="flex flex-wrap gap-2">
+          <span class="${UI.pillStrong}">${it.is_done ? "✅" : "⬜"} 상태</span>
+          <span class="${UI.pill}">🗂️ <b class="font-semibold">${escapeHtml(sectionTitle)}</b></span>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">제목</div>
+          <div class="${UI.label} mb-1">제목</div>
           <input id="ck_title" class="${UI.input}" value="${escapeHtml(it.title || "")}" />
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">섹션</div>
+          <div class="${UI.label} mb-1">섹션</div>
           <select id="ck_section" class="${UI.input}">
-            ${(sections ?? []).map(s => `<option value="${s.id}" ${s.id===it.section_id?"selected":""}>${escapeHtml(s.title)}</option>`).join("")}
+            ${(sections ?? []).map(s =>
+              `<option value="${s.id}" ${s.id===it.section_id?"selected":""}>${escapeHtml(s.title)}</option>`
+            ).join("")}
           </select>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">마감일(선택)</div>
+          <div class="${UI.label} mb-1">마감일(선택)</div>
           <input id="ck_due" type="date" class="${UI.input}" value="${it.due_date ?? ""}" />
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">메모(선택)</div>
-          <textarea id="ck_notes" class="${UI.input}" rows="4">${escapeHtml(it.notes || "")}</textarea>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="ck_notes" class="${UI.textarea}" rows="4">${escapeHtml(it.notes || "")}</textarea>
         </div>
 
-        <label class="flex items-center gap-2 text-sm">
+        <label class="flex items-center gap-2 text-[13px] text-slate-800">
           <input id="ck_done" type="checkbox" ${it.is_done ? "checked":""} />
           완료
         </label>
 
         <div class="flex items-center justify-between pt-2">
-          <button id="ck_delete" class="${UI.btn}">삭제</button>
-          <button id="ck_close" class="${UI.btnPrimary}">닫기</button>
+          <button id="ck_delete" class="${UI.btnDanger}">🗑️ 삭제</button>
+          <button id="ck_close" class="${UI.btnPrimary}">완료</button>
         </div>
       </div>
     `;
 
-    bindSave("#ck_title",   (el) => safeUpdate("checklist_items", id, { title: el.value }));
+    bindSave("#ck_title", (el) => safeUpdate("checklist_items", id, { title: el.value }));
     bindSave("#ck_section", (el) => safeUpdate("checklist_items", id, { section_id: el.value }));
-    bindSave("#ck_due",     (el) => safeUpdate("checklist_items", id, { due_date: el.value || null }));
-    bindSave("#ck_notes",   (el) => safeUpdate("checklist_items", id, { notes: el.value || null }));
-    bindSave("#ck_done",    (el) => safeUpdate("checklist_items", id, { is_done: el.checked }));
+    bindSave("#ck_due", (el) => safeUpdate("checklist_items", id, { due_date: el.value || null }));
+    bindSave("#ck_notes", (el) => safeUpdate("checklist_items", id, { notes: el.value || null }));
+    bindSave("#ck_done", (el) => safeUpdate("checklist_items", id, { is_done: el.checked }));
 
     qs("#ck_close").onclick = closeDrawer;
     qs("#ck_delete").onclick = async () => {
@@ -245,77 +390,87 @@ async function renderDrawer() {
       await supabase.from("checklist_items").delete().eq("id", id);
       closeDrawer();
     };
+
     setDrawerStatus("열림");
     return;
   }
 
   if (kind === "budget_item") {
-    titleEl.textContent = "예산 항목 편집";
+    titleEl.innerHTML = `${headerBadge("💳", "예산 항목 편집")}`;
 
-    const [{ data: it, error: e1 }, { data: cats }] = await Promise.all([
+    const [{ data: it, error: e1 }, { data: cats, error: e2 }] = await Promise.all([
       supabase.from("budget_items").select("*").eq("id", id).single(),
       supabase.from("budget_categories").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
     ]);
-    if (e1) { contentEl.innerHTML = `<div class="text-sm text-red-600">${escapeHtml(e1.message)}</div>`; return; }
+    if (e1 || e2) {
+      contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
+      return;
+    }
+
+    const unpaid = Math.max(0, Number(it.actual || 0) - Number(it.paid || 0));
 
     contentEl.innerHTML = `
       <div class="space-y-4">
-        <div class="${UI.pill} w-fit">
-          <span class="opacity-70">미지불</span>
-          <span class="font-semibold">${moneyFmt(Math.max(0, Number(it.actual||0) - Number(it.paid||0)))}원</span>
+        <div class="flex flex-wrap gap-2">
+          <span class="${UI.pillStrong}">🧾 잔액 <span class="ml-1">${moneyFmt(unpaid)}원</span></span>
+          <span class="${UI.pill}">예상 <b class="font-semibold">${moneyFmt(it.estimate || 0)}</b></span>
+          <span class="${UI.pill}">실제 <b class="font-semibold">${moneyFmt(it.actual || 0)}</b></span>
+          <span class="${UI.pill}">지불 <b class="font-semibold">${moneyFmt(it.paid || 0)}</b></span>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">항목명</div>
+          <div class="${UI.label} mb-1">항목명</div>
           <input id="bd_name" class="${UI.input}" value="${escapeHtml(it.item_name || "")}" />
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">카테고리</div>
+          <div class="${UI.label} mb-1">카테고리</div>
           <select id="bd_cat" class="${UI.input}">
-            ${(cats ?? []).map(c => `<option value="${c.id}" ${c.id===it.category_id?"selected":""}>${escapeHtml(c.title)}</option>`).join("")}
+            ${(cats ?? []).map(c =>
+              `<option value="${c.id}" ${c.id===it.category_id?"selected":""}>${escapeHtml(c.title)}</option>`
+            ).join("")}
           </select>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <div class="text-xs opacity-70 mb-1">예상</div>
+            <div class="${UI.label} mb-1">예상</div>
             <input id="bd_est" type="number" class="${UI.input}" value="${Number(it.estimate||0)}" min="0" />
           </div>
           <div>
-            <div class="text-xs opacity-70 mb-1">실제</div>
+            <div class="${UI.label} mb-1">실제</div>
             <input id="bd_act" type="number" class="${UI.input}" value="${Number(it.actual||0)}" min="0" />
           </div>
           <div>
-            <div class="text-xs opacity-70 mb-1">지불</div>
+            <div class="${UI.label} mb-1">지불</div>
             <input id="bd_paid" type="number" class="${UI.input}" value="${Number(it.paid||0)}" min="0" />
           </div>
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">결제 마감(선택)</div>
+          <div class="${UI.label} mb-1">결제 마감(선택)</div>
           <input id="bd_due" type="date" class="${UI.input}" value="${it.due_date ?? ""}" />
         </div>
 
         <div>
-          <div class="text-xs opacity-70 mb-1">메모(선택)</div>
-          <textarea id="bd_notes" class="${UI.input}" rows="4">${escapeHtml(it.notes || "")}</textarea>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="bd_notes" class="${UI.textarea}" rows="4">${escapeHtml(it.notes || "")}</textarea>
         </div>
 
         <div class="flex items-center justify-between pt-2">
-          <button id="bd_delete" class="${UI.btn}">삭제</button>
-          <button id="bd_close" class="${UI.btnPrimary}">닫기</button>
+          <button id="bd_delete" class="${UI.btnDanger}">🗑️ 삭제</button>
+          <button id="bd_close" class="${UI.btnPrimary}">완료</button>
         </div>
       </div>
     `;
 
     bindSave("#bd_name", (el) => safeUpdate("budget_items", id, { item_name: el.value }));
-    bindSave("#bd_cat",  (el) => safeUpdate("budget_items", id, { category_id: el.value }));
-    bindSave("#bd_est",  (el) => safeUpdate("budget_items", id, { estimate: Number(el.value || 0) }));
-    bindSave("#bd_act",  (el) => safeUpdate("budget_items", id, { actual: Number(el.value || 0) }));
+    bindSave("#bd_cat", (el) => safeUpdate("budget_items", id, { category_id: el.value }));
+    bindSave("#bd_est", (el) => safeUpdate("budget_items", id, { estimate: Number(el.value || 0) }));
+    bindSave("#bd_act", (el) => safeUpdate("budget_items", id, { actual: Number(el.value || 0) }));
     bindSave("#bd_paid", (el) => safeUpdate("budget_items", id, { paid: Number(el.value || 0) }));
-    bindSave("#bd_due",  (el) => safeUpdate("budget_items", id, { due_date: el.value || null }));
-    bindSave("#bd_notes",(el) => safeUpdate("budget_items", id, { notes: el.value || null }));
+    bindSave("#bd_due", (el) => safeUpdate("budget_items", id, { due_date: el.value || null }));
+    bindSave("#bd_notes", (el) => safeUpdate("budget_items", id, { notes: el.value || null }));
 
     qs("#bd_close").onclick = closeDrawer;
     qs("#bd_delete").onclick = async () => {
@@ -323,76 +478,16 @@ async function renderDrawer() {
       await supabase.from("budget_items").delete().eq("id", id);
       closeDrawer();
     };
+
     setDrawerStatus("열림");
     return;
   }
 
   titleEl.textContent = "Detail";
-  contentEl.innerHTML = `<div class="text-sm opacity-70">지원하지 않는 패널</div>`;
+  contentEl.innerHTML = `<div class="${UI.sub}">지원하지 않는 패널</div>`;
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  }[c]));
-}
-
-// 해시 라우팅: #/timeline, #/checklist, #/budget
-function getRoute() {
-  const h = location.hash || "#/timeline";
-  if (h.startsWith("#/")) return h.slice(1);
-  return "/timeline";
-}
-
-// auth 링크가 해시(#access_token=...)로 오는 경우(설정에 따라 발생)
-function isAuthHash() {
-  return location.hash.startsWith("#access_token=") || location.hash.startsWith("#error=");
-}
-
-async function ensureAuthFromUrl() {
-  // 1) PKCE 코드 방식: ?code=...
-  const url = new URL(location.href);
-  const code = url.searchParams.get("code");
-  if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
-    url.searchParams.delete("code");
-    history.replaceState({}, "", url.toString());
-  }
-
-  // 2) 해시 토큰 방식: #access_token=...&refresh_token=...
-  if (isAuthHash()) {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    const error = params.get("error_description") || params.get("error");
-    if (error) console.error("Auth error:", error);
-
-    if (access_token && refresh_token) {
-      await supabase.auth.setSession({ access_token, refresh_token });
-    }
-    // auth hash는 라우팅 hash로 교체
-    location.hash = "#/timeline";
-  }
-}
-const UI = {
-  pageWrap: "min-h-screen flex items-center justify-center p-4 md:p-10",
-  shell: "w-full max-w-5xl grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4",
-  card: "backdrop-blur-xl bg-white/70 border border-white/60 shadow-soft rounded-3xl",
-  cardInner: "p-4 md:p-6",
-  navLink: "block px-3 py-2 rounded-2xl hover:bg-white/60 transition text-sm",
-  navLinkActive: "bg-white/70 font-semibold",
-  btn: "rounded-full px-4 py-2 text-sm border border-white/60 bg-white/60 hover:bg-white/80 transition shadow-sm",
-  btnPrimary:
-    "rounded-full px-4 py-2 text-sm text-white shadow-sm " +
-    "bg-gradient-to-r from-brand-500 to-fuchsia-500 hover:from-brand-600 hover:to-fuchsia-600 transition",
-  pill: "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs bg-white/60 border border-white/60",
-  input: "w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500/30",
-};
-
+// ---------- Data helpers ----------
 async function getProjectId() {
   const { data, error } = await supabase
     .from("projects")
@@ -400,37 +495,43 @@ async function getProjectId() {
     .order("created_at", { ascending: true })
     .limit(1)
     .single();
-
   if (error) throw error;
   return data.id;
 }
 
+// ---------- Layout ----------
 function layoutShell(userEmail) {
   app.innerHTML = `
   <div class="${UI.pageWrap}">
     <div class="${UI.shell}">
       <aside class="${UI.card}">
         <div class="${UI.cardInner}">
-          <div class="flex items-center justify-between">
+          <div class="flex items-start justify-between gap-3">
             <div>
-              <div class="text-lg font-semibold tracking-tight">Wedding Planner</div>
-              <div class="text-xs opacity-70 mt-1">${escapeHtml(userEmail)}</div>
+              <div class="flex items-center gap-2">
+                <span class="${UI.pillStrong}">💍</span>
+                <div class="text-[16px] font-semibold tracking-tight text-slate-900">Wedding Planner</div>
+              </div>
+              <div class="${UI.sub} mt-1">${escapeHtml(userEmail)}</div>
             </div>
-            <div class="${UI.pill}">
-              <span class="w-2 h-2 rounded-full bg-green-500"></span>
-              Online
-            </div>
+            <span class="${UI.pill}"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Online</span>
           </div>
 
           <nav class="mt-5 space-y-2" id="nav">
-            <a class="${UI.navLink}" data-route="/timeline" href="#/timeline">행사일정</a>
-            <a class="${UI.navLink}" data-route="/checklist" href="#/checklist">체크리스트</a>
-            <a class="${UI.navLink}" data-route="/budget" href="#/budget">예산</a>
+            <a class="${UI.navLink}" data-route="/timeline" href="#/timeline">
+              <span class="${UI.pillStrong}">📅</span> 행사일정
+            </a>
+            <a class="${UI.navLink}" data-route="/checklist" href="#/checklist">
+              <span class="${UI.pillStrong}">✅</span> 체크리스트
+            </a>
+            <a class="${UI.navLink}" data-route="/budget" href="#/budget">
+              <span class="${UI.pillStrong}">💳</span> 예산
+            </a>
           </nav>
 
           <div class="mt-6 flex items-center justify-between">
-            <button id="logout" class="${UI.btn}">로그아웃</button>
-            <span class="text-xs opacity-60">Auto-save</span>
+            <button id="logout" class="${UI.btn}">↩︎ 로그아웃</button>
+            <span class="${UI.sub}">Auto-save</span>
           </div>
         </div>
       </aside>
@@ -440,30 +541,30 @@ function layoutShell(userEmail) {
           <div id="page"></div>
         </div>
       </main>
+
       <!-- Drawer Overlay + Panel -->
-      <div id="drawerOverlay" class="fixed inset-0 bg-black/20 opacity-0 pointer-events-none transition"></div>
+      <div id="drawerOverlay" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition"></div>
 
       <aside id="drawerPanel"
-        class="fixed right-0 top-0 h-full w-full md:w-[420px]
+        class="fixed right-0 top-0 h-full w-full md:w-[440px]
                translate-x-full transition-transform duration-200
-               ${UI.card} rounded-none md:rounded-l-3xl
-               border-l border-white/60">
-        <div class="p-4 md:p-6 h-full flex flex-col">
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold" id="drawerTitle">Detail</div>
-            <button id="drawerClose" class="${UI.btn}">닫기</button>
+               ${UI.card} rounded-none md:rounded-l-[28px]
+               border-l border-white/60 ring-1 ring-white/50">
+        <div class="p-5 sm:p-6 h-full flex flex-col">
+          <div class="flex items-center justify-between gap-3">
+            <div id="drawerTitle" class="text-[13px] font-semibold text-slate-900"></div>
+            <button id="drawerClose" class="${UI.btnSm}">닫기 ✕</button>
           </div>
           <div class="mt-4 flex-1 overflow-auto" id="drawerContent"></div>
-          <div class="mt-3 text-xs opacity-70" id="drawerStatus"></div>
+          <div class="mt-3 text-[12px] text-slate-600/90" id="drawerStatus"></div>
         </div>
       </aside>
-
     </div>
   </div>`;
 
   // active 메뉴 표시
   const r = (location.hash || "#/timeline").replace("#", "");
-  document.querySelectorAll("#nav a[data-route]").forEach((a) => {
+  qsa("#nav a[data-route]").forEach((a) => {
     if (a.getAttribute("data-route") === r) a.classList.add(...UI.navLinkActive.split(" "));
   });
 
@@ -471,13 +572,12 @@ function layoutShell(userEmail) {
     await supabase.auth.signOut();
     render();
   };
-  // ✅ drawer close handlers (DOM 만든 뒤 여기서만)
-  const overlay = qs("#drawerOverlay");
-  const closeBtn = qs("#drawerClose");
-  if (overlay) overlay.onclick = closeDrawer;
-  if (closeBtn) closeBtn.onclick = closeDrawer;
 
-  // ESC 핸들러는 중복 등록 방지
+  // ✅ drawer close handlers는 DOM 만든 뒤 여기서만
+  qs("#drawerOverlay").onclick = closeDrawer;
+  qs("#drawerClose").onclick = closeDrawer;
+
+  // ESC 핸들러(중복 방지)
   if (!window.__drawerEscBound) {
     window.__drawerEscBound = true;
     window.addEventListener("keydown", (e) => {
@@ -486,21 +586,23 @@ function layoutShell(userEmail) {
   }
 }
 
-
 function loginView() {
   app.innerHTML = `
   <div class="${UI.pageWrap}">
     <div class="${UI.card} w-full max-w-sm">
       <div class="${UI.cardInner} space-y-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">로그인</h1>
-          <p class="text-sm opacity-70 mt-1">매직 링크로 바로 들어와.</p>
+          <div class="flex items-center gap-2">
+            <span class="${UI.pillStrong}">💍</span>
+            <h1 class="${UI.h1}">로그인</h1>
+          </div>
+          <p class="${UI.sub} mt-1">매직 링크로 바로 들어와.</p>
         </div>
 
         <input id="email" class="${UI.input}" placeholder="email@example.com" />
-        <button id="send" class="${UI.btnPrimary} w-full">매직 링크 보내기</button>
+        <button id="send" class="${UI.btnPrimary} w-full">✉️ 매직 링크 보내기</button>
 
-        <p id="msg" class="text-sm opacity-80"></p>
+        <p id="msg" class="${UI.sub}"></p>
       </div>
     </div>
   </div>`;
@@ -512,77 +614,66 @@ function loginView() {
       email,
       options: { emailRedirectTo: location.origin + location.pathname },
     });
-    qs("#msg").textContent = error ? error.message : "메일함 확인해줘!";
+    qs("#msg").textContent = error ? error.message : "메일함에서 링크를 눌러줘!";
   };
 }
 
-
-async function ensureDefaultDay(projectId) {
-  const { data } = await supabase
-    .from("timeline_days")
-    .select("id")
-    .eq("project_id", projectId)
-    .order("sort_order", { ascending: true })
-    .limit(1);
-
-  if (data?.[0]?.id) return data[0].id;
-
-  const ins = await supabase
-    .from("timeline_days")
-    .insert({ project_id: projectId, title: "본식 당일", sort_order: 0 })
-    .select("id")
-    .single();
-
-  return ins.data.id;
-}
-
+// ---------- Pages ----------
 async function timelinePage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    <header class="flex items-center justify-between">
+    <header class="flex items-start justify-between gap-3">
       <div>
-        <h1 class="text-xl font-semibold">행사일정</h1>
-        <div class="text-xs opacity-70 mt-1">카드를 클릭하면 오른쪽에서 상세 편집</div>
+        <div class="flex items-center gap-2">
+          <span class="${UI.pillStrong}">📅</span>
+          <h1 class="${UI.h1}">행사일정</h1>
+        </div>
+        <div class="${UI.sub} mt-1">카드를 클릭하면 오른쪽에서 상세 편집</div>
       </div>
-      <button id="addEvent" class="${UI.btnPrimary}">+ 추가</button>
+      <button id="addEvent" class="${UI.btnPrimary}">＋ 일정 추가</button>
     </header>
 
     <div class="mt-4 flex flex-wrap gap-2" id="dayTabs"></div>
     <div class="mt-4 space-y-3" id="events"></div>
   `;
 
-  // day 로드(탭)
-  const { data: days } = await supabase
-    .from("timeline_days")
-    .select("id,title,sort_order")
-    .eq("project_id", projectId)
-    .order("sort_order");
+  async function loadDays() {
+    const res = await supabase
+      .from("timeline_days")
+      .select("id,title,sort_order")
+      .eq("project_id", projectId)
+      .order("sort_order");
+    return res;
+  }
 
-  let dayId = days?.[0]?.id;
-  if (!dayId) {
+  let { data: days } = await loadDays();
+  days = days || [];
+
+  // 기본 day 보장
+  if (days.length === 0) {
     const ins = await supabase
       .from("timeline_days")
       .insert({ project_id: projectId, title: "본식 당일", sort_order: 0 })
-      .select("id")
+      .select("id,title,sort_order")
       .single();
-    dayId = ins.data.id;
+    if (ins.data) days = [ins.data];
   }
 
-  let selectedDayId = dayId;
+  let selectedDayId = days[0]?.id;
 
   function renderTabs() {
     const box = qs("#dayTabs");
-    box.innerHTML = (days ?? []).map(d => {
+    box.innerHTML = (days || []).map(d => {
       const active = d.id === selectedDayId;
       return `
         <button data-day="${d.id}"
-          class="${UI.pill} ${active ? "bg-white/80" : ""}">
-          ${escapeHtml(d.title)}
+          class="${UI.pill} ${active ? "bg-white/80 border-white/80 shadow-[0_10px_22px_rgba(0,0,0,0.06)]" : ""}">
+          🗓️ ${escapeHtml(d.title)}
         </button>
       `;
     }).join("");
 
-    box.querySelectorAll("button[data-day]").forEach(btn => {
+    qsa("#dayTabs button[data-day]").forEach(btn => {
       btn.onclick = () => {
         selectedDayId = btn.dataset.day;
         load();
@@ -599,48 +690,42 @@ async function timelinePage(projectId) {
       .order("sort_order", { ascending: true });
 
     if (error) {
-      qs("#events").innerHTML = `<div class="text-sm text-red-600">${escapeHtml(error.message)}</div>`;
+      qs("#events").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(error.message)}</div>`;
       return;
     }
 
     qs("#events").innerHTML = (data ?? []).map(e => `
-      <button data-id="${e.id}"
-        class="w-full text-left ${UI.card} p-4 md:p-5 hover:bg-white/80 transition rounded-3xl">
+      <button data-id="${e.id}" class="${UI.row}">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-2xl flex items-center justify-center
-                        bg-gradient-to-br from-brand-500/20 to-fuchsia-500/20 border border-white/60">
-              <span class="text-xl">${escapeHtml(e.icon || "⏰")}</span>
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center
+                        bg-gradient-to-br from-violet-600/15 via-fuchsia-500/10 to-pink-500/15
+                        border border-white/70">
+              <span class="text-[20px]">${escapeHtml(e.icon || "⏰")}</span>
             </div>
 
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="${UI.pill}">
-                  <span class="opacity-70">시간</span>
-                  <span class="font-semibold">${escapeHtml(timeToHHMM(e.start_time))}</span>
-                </span>
-                <span class="${UI.pill}">
-                  <span class="opacity-70">소요</span>
-                  <span class="font-semibold">${e.duration_min}m</span>
-                </span>
-                ${e.is_highlighted ? `<span class="${UI.pill} bg-white/80">⭐ 중요</span>` : ""}
+                <span class="${UI.pill}">⏰ <b class="font-semibold">${escapeHtml(timeToHHMM(e.start_time))}</b></span>
+                <span class="${UI.pill}">⏳ <b class="font-semibold">${e.duration_min}m</b></span>
+                ${e.is_highlighted ? `<span class="${UI.pillStrong}">⭐ 중요</span>` : ""}
               </div>
 
-              <div class="mt-2 text-base font-semibold">${escapeHtml(e.title)}</div>
-              ${e.location ? `<div class="text-sm opacity-70 mt-1">${escapeHtml(e.location)}</div>` : ""}
+              <div class="mt-2 text-[15px] font-semibold text-slate-900">${escapeHtml(e.title)}</div>
+              ${e.location ? `<div class="${UI.sub} mt-1">📍 ${escapeHtml(e.location)}</div>` : ""}
             </div>
           </div>
 
-          <span class="text-xs opacity-60 mt-1">열기 →</span>
+          <span class="${UI.sub} mt-1">열기 →</span>
         </div>
       </button>
     `).join("") || `
-      <div class="${UI.card} p-6 rounded-3xl text-sm opacity-70">
-        이 Day의 일정이 없어. 오른쪽 위 <b>+ 추가</b>로 만들어봐.
+      <div class="${UI.row} text-[13px] text-slate-700">
+        아직 일정이 없어. 오른쪽 위 <b>＋ 일정 추가</b>로 만들어봐.
       </div>
     `;
 
-    qs("#events").querySelectorAll("button[data-id]").forEach(btn => {
+    qsa("#events button[data-id]").forEach(btn => {
       btn.onclick = () => openDrawer("timeline_event", { id: btn.dataset.id, projectId });
     });
   }
@@ -678,17 +763,12 @@ async function timelinePage(projectId) {
     .channel("timeline")
     .on("postgres_changes", { event: "*", schema: "public", table: "timeline_events", filter: `project_id=eq.${projectId}` }, load)
     .on("postgres_changes", { event: "*", schema: "public", table: "timeline_days", filter: `project_id=eq.${projectId}` }, async () => {
-      // day가 바뀌면 다시 로드
-      const res = await supabase
-        .from("timeline_days")
-        .select("id,title,sort_order")
-        .eq("project_id", projectId)
-        .order("sort_order");
+      const res = await loadDays();
       if (res.data) {
-        days.length = 0;
-        res.data.forEach(x => days.push(x));
+        days = res.data;
         if (!days.find(d => d.id === selectedDayId)) selectedDayId = days[0]?.id;
         renderTabs();
+        load();
       }
     })
     .subscribe();
@@ -703,12 +783,15 @@ async function timelinePage(projectId) {
 async function checklistPage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    <header class="flex items-center justify-between">
+    <header class="flex items-start justify-between gap-3">
       <div>
-        <h1 class="text-xl font-semibold">체크리스트</h1>
-        <div class="text-xs opacity-70 mt-1">체크는 바로, 편집은 카드 클릭</div>
+        <div class="flex items-center gap-2">
+          <span class="${UI.pillStrong}">✅</span>
+          <h1 class="${UI.h1}">체크리스트</h1>
+        </div>
+        <div class="${UI.sub} mt-1">체크는 바로, 편집은 카드 클릭</div>
       </div>
-      <button id="addItem" class="${UI.btnPrimary}">+ 추가</button>
+      <button id="addItem" class="${UI.btnPrimary}">＋ 할 일 추가</button>
     </header>
     <div class="mt-4 space-y-4" id="sections"></div>
   `;
@@ -738,7 +821,7 @@ async function checklistPage(projectId) {
       .order("sort_order");
 
     if (se) {
-      qs("#sections").innerHTML = `<div class="text-sm text-red-600">${escapeHtml(se.message)}</div>`;
+      qs("#sections").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(se.message)}</div>`;
       return;
     }
 
@@ -749,7 +832,7 @@ async function checklistPage(projectId) {
       .order("sort_order");
 
     if (ie) {
-      qs("#sections").innerHTML = `<div class="text-sm text-red-600">${escapeHtml(ie.message)}</div>`;
+      qs("#sections").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(ie.message)}</div>`;
       return;
     }
 
@@ -766,37 +849,37 @@ async function checklistPage(projectId) {
       const pct = total ? Math.round((done / total) * 100) : 0;
 
       return `
-        <div class="${UI.card} rounded-3xl p-4 md:p-5">
+        <div class="${UI.row}">
           <div class="flex items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <div class="font-semibold">${escapeHtml(s.title)}</div>
-                <span class="${UI.pill}">${done}/${total}</span>
-                <span class="${UI.pill}">${pct}%</span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="text-[15px] font-semibold text-slate-900">${escapeHtml(s.title)}</div>
+                <span class="${UI.pill}">✅ ${done}/${total}</span>
+                <span class="${UI.pill}">📈 ${pct}%</span>
               </div>
-              <div class="mt-2 h-2 rounded-full bg-white/50 overflow-hidden border border-white/60">
-                <div class="h-full bg-gradient-to-r from-brand-500/60 to-fuchsia-500/60" style="width:${pct}%;"></div>
+              <div class="mt-2 h-2 rounded-full bg-white/55 overflow-hidden border border-white/70">
+                <div class="h-full bg-gradient-to-r from-violet-600/60 via-fuchsia-500/55 to-pink-500/55" style="width:${pct}%;"></div>
               </div>
             </div>
-            <button class="${UI.btn}" data-add="${s.id}">+ 이 섹션</button>
+            <button class="${UI.btnSm}" data-add="${s.id}">＋ 이 섹션</button>
           </div>
 
           <div class="mt-4 space-y-2">
-            ${total === 0 ? `<div class="text-sm opacity-70">할 일이 없어.</div>` :
+            ${total === 0 ? `<div class="${UI.sub}">할 일이 없어.</div>` :
               list.map(it => `
-                <div class="flex items-center justify-between gap-3 p-3 rounded-3xl
-                            bg-white/60 border border-white/60 hover:bg-white/80 transition"
+                <div class="flex items-center justify-between gap-3 p-3 rounded-[18px]
+                            bg-white/55 border border-white/70 hover:bg-white/80 transition"
                      data-open="${it.id}">
-                  <label class="flex items-center gap-3 flex-1">
+                  <label class="flex items-center gap-3 flex-1 cursor-pointer">
                     <input type="checkbox" data-toggle="${it.id}" ${it.is_done ? "checked" : ""} />
-                    <div>
-                      <div class="font-medium ${it.is_done ? "line-through opacity-60" : ""}">
+                    <div class="min-w-0">
+                      <div class="text-[13.5px] font-medium text-slate-900 ${it.is_done ? "line-through opacity-60" : ""}">
                         ${escapeHtml(it.title)}
                       </div>
-                      <div class="text-xs opacity-60 mt-1">클릭해서 상세 편집</div>
+                      <div class="${UI.sub} mt-1">클릭해서 상세 편집</div>
                     </div>
                   </label>
-                  <span class="text-xs opacity-60">→</span>
+                  <span class="${UI.sub}">→</span>
                 </div>
               `).join("")
             }
@@ -806,7 +889,7 @@ async function checklistPage(projectId) {
     }).join("");
 
     // add item in section
-    qs("#sections").querySelectorAll("button[data-add]").forEach(btn => {
+    qsa("#sections button[data-add]").forEach(btn => {
       btn.onclick = async () => {
         const sectionId = btn.dataset.add;
         const ins = await supabase.from("checklist_items").insert({
@@ -821,7 +904,7 @@ async function checklistPage(projectId) {
     });
 
     // toggle (stop opening drawer)
-    qs("#sections").querySelectorAll("input[data-toggle]").forEach(cb => {
+    qsa("#sections input[data-toggle]").forEach(cb => {
       cb.onclick = (e) => e.stopPropagation();
       cb.onchange = async () => {
         const id = cb.dataset.toggle;
@@ -830,7 +913,7 @@ async function checklistPage(projectId) {
     });
 
     // open drawer on row click
-    qs("#sections").querySelectorAll("[data-open]").forEach(row => {
+    qsa("#sections [data-open]").forEach(row => {
       row.onclick = () => openDrawer("checklist_item", { id: row.dataset.open, projectId });
     });
   }
@@ -871,19 +954,21 @@ async function checklistPage(projectId) {
 async function budgetPage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    <header class="flex items-center justify-between">
+    <header class="flex items-start justify-between gap-3">
       <div>
-        <h1 class="text-xl font-semibold">예산</h1>
-        <div class="text-xs opacity-70 mt-1">카드 클릭 → 우측에서 금액/마감/메모 편집</div>
+        <div class="flex items-center gap-2">
+          <span class="${UI.pillStrong}">💳</span>
+          <h1 class="${UI.h1}">예산</h1>
+        </div>
+        <div class="${UI.sub} mt-1">카드 클릭 → 우측에서 금액/마감/메모 편집</div>
       </div>
-      <button id="addBudget" class="${UI.btnPrimary}">+ 항목 추가</button>
+      <button id="addBudget" class="${UI.btnPrimary}">＋ 항목 추가</button>
     </header>
 
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3" id="summary"></div>
+    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="summary"></div>
     <div class="mt-4 space-y-4" id="cats"></div>
   `;
 
-  // ✅ 템플릿 보장(카테고리 없으면 기본 생성)
   async function ensureTemplate() {
     const { data, error } = await supabase
       .from("budget_categories")
@@ -895,13 +980,15 @@ async function budgetPage(projectId) {
     if (data && data.length > 0) return;
 
     const defaults = ["예식장", "스드메", "스냅/영상", "부케/플라워", "청첩장", "기타"];
-    const ins = await supabase.from("budget_categories").insert(
+    await supabase.from("budget_categories").insert(
       defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i }))
     );
-    if (ins.error) throw ins.error;
   }
 
-  function n(x) { const v = Number(x); return Number.isFinite(v) ? v : 0; }
+  function n(x) {
+    const v = Number(x);
+    return Number.isFinite(v) ? v : 0;
+  }
 
   async function load() {
     await ensureTemplate();
@@ -913,7 +1000,7 @@ async function budgetPage(projectId) {
       .order("sort_order");
 
     if (ce) {
-      qs("#cats").innerHTML = `<div class="text-sm text-red-600">${escapeHtml(ce.message)}</div>`;
+      qs("#cats").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(ce.message)}</div>`;
       return;
     }
 
@@ -924,7 +1011,7 @@ async function budgetPage(projectId) {
       .order("sort_order");
 
     if (ie) {
-      qs("#cats").innerHTML = `<div class="text-sm text-red-600">${escapeHtml(ie.message)}</div>`;
+      qs("#cats").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(ie.message)}</div>`;
       return;
     }
 
@@ -938,10 +1025,10 @@ async function budgetPage(projectId) {
     const unpaid = Math.max(0, totals.actual - totals.paid);
 
     qs("#summary").innerHTML = `
-      <div class="${UI.card} p-4 rounded-3xl"><div class="text-xs opacity-70">예상</div><div class="text-lg font-semibold">${moneyFmt(totals.estimate)}원</div></div>
-      <div class="${UI.card} p-4 rounded-3xl"><div class="text-xs opacity-70">실제</div><div class="text-lg font-semibold">${moneyFmt(totals.actual)}원</div></div>
-      <div class="${UI.card} p-4 rounded-3xl"><div class="text-xs opacity-70">지불</div><div class="text-lg font-semibold">${moneyFmt(totals.paid)}원</div></div>
-      <div class="${UI.card} p-4 rounded-3xl"><div class="text-xs opacity-70">미지불</div><div class="text-lg font-semibold">${moneyFmt(unpaid)}원</div></div>
+      <div class="${UI.row}"><div class="${UI.sub}">예상</div><div class="text-[18px] font-semibold text-slate-900 mt-1">${moneyFmt(totals.estimate)}원</div></div>
+      <div class="${UI.row}"><div class="${UI.sub}">실제</div><div class="text-[18px] font-semibold text-slate-900 mt-1">${moneyFmt(totals.actual)}원</div></div>
+      <div class="${UI.row}"><div class="${UI.sub}">지불</div><div class="text-[18px] font-semibold text-slate-900 mt-1">${moneyFmt(totals.paid)}원</div></div>
+      <div class="${UI.row}"><div class="${UI.sub}">미지불</div><div class="text-[18px] font-semibold text-slate-900 mt-1">${moneyFmt(unpaid)}원</div></div>
     `;
 
     const byCat = new Map();
@@ -952,64 +1039,79 @@ async function budgetPage(projectId) {
 
     qs("#cats").innerHTML = (cats || []).map(c => {
       const list = byCat.get(c.id) || [];
-      const catTotal = list.reduce((a,it)=>a+n(it.actual),0);
+      const catTotal = list.reduce((a, it) => a + n(it.actual), 0);
 
       return `
-        <div class="${UI.card} rounded-3xl p-4 md:p-5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="font-semibold">${escapeHtml(c.title)}</div>
-              <span class="${UI.pill}">합계 ${moneyFmt(catTotal)}원</span>
+        <div class="${UI.row}">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="text-[15px] font-semibold text-slate-900">${escapeHtml(c.title)}</div>
+              <span class="${UI.pill}">합계 <b class="font-semibold">${moneyFmt(catTotal)}</b>원</span>
             </div>
-            <button class="${UI.btn}" data-add="${c.id}">+ 추가</button>
+            <button class="${UI.btnSm}" data-add="${c.id}">＋ 추가</button>
           </div>
+                    <div class="mt-4 space-y-2">
+            ${
+              list.length === 0
+                ? `<div class="${UI.sub}">항목이 없어.</div>`
+                : list
+                    .map((it) => {
+                      const remaining = Math.max(0, n(it.actual) - n(it.paid));
+                      return `
+                        <button data-open="${it.id}" class="w-full ${UI.row} !p-3">
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                              <div class="flex items-center gap-2">
+                                <span class="${UI.pillStrong}">🧾</span>
+                                <div class="text-[14px] font-semibold text-slate-900 truncate">
+                                  ${escapeHtml(it.item_name || "항목")}
+                                </div>
+                              </div>
 
-          <div class="mt-4 space-y-2">
-            ${list.length === 0 ? `<div class="text-sm opacity-70">항목이 없어.</div>` :
-              list.map(it => {
-                const remaining = Math.max(0, n(it.actual) - n(it.paid));
-                return `
-                  <button data-open="${it.id}"
-                    class="w-full text-left p-3 rounded-3xl bg-white/60 border border-white/60 hover:bg-white/80 transition">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <div class="font-medium">${escapeHtml(it.item_name)}</div>
-                        <div class="mt-2 flex flex-wrap gap-2">
-                          <span class="${UI.pill}">예상 <b>${moneyFmt(it.estimate)}</b></span>
-                          <span class="${UI.pill}">실제 <b>${moneyFmt(it.actual)}</b></span>
-                          <span class="${UI.pill}">지불 <b>${moneyFmt(it.paid)}</b></span>
-                          <span class="${UI.pill} bg-white/80">잔액 <b>${moneyFmt(remaining)}</b></span>
-                        </div>
-                      </div>
-                      <span class="text-xs opacity-60 mt-1">열기 →</span>
-                    </div>
-                  </button>
-                `;
-              }).join("")
+                              <div class="mt-2 flex flex-wrap gap-2">
+                                <span class="${UI.pill}">예상 <b class="font-semibold">${moneyFmt(it.estimate)}</b></span>
+                                <span class="${UI.pill}">실제 <b class="font-semibold">${moneyFmt(it.actual)}</b></span>
+                                <span class="${UI.pill}">지불 <b class="font-semibold">${moneyFmt(it.paid)}</b></span>
+                                <span class="${UI.pillStrong}">잔액 <b class="font-semibold">${moneyFmt(remaining)}</b></span>
+                              </div>
+                            </div>
+
+                            <span class="${UI.sub} mt-1">열기 →</span>
+                          </div>
+                        </button>
+                      `;
+                    })
+                    .join("")
             }
           </div>
         </div>
       `;
     }).join("");
 
-    qs("#cats").querySelectorAll("button[data-add]").forEach(btn => {
+    // add in category
+    qsa("#cats button[data-add]").forEach((btn) => {
       btn.onclick = async () => {
         const categoryId = btn.dataset.add;
-        const ins = await supabase.from("budget_items").insert({
-          project_id: projectId,
-          category_id: categoryId,
-          item_name: "새 예산 항목",
-          estimate: 0,
-          actual: 0,
-          paid: 0,
-          sort_order: Date.now(),
-        }).select("id").single();
+        const ins = await supabase
+          .from("budget_items")
+          .insert({
+            project_id: projectId,
+            category_id: categoryId,
+            item_name: "새 예산 항목",
+            estimate: 0,
+            actual: 0,
+            paid: 0,
+            sort_order: Date.now(),
+          })
+          .select("id")
+          .single();
 
         openDrawer("budget_item", { id: ins.data.id, projectId });
       };
     });
 
-    qs("#cats").querySelectorAll("button[data-open]").forEach(btn => {
+    // open drawer
+    qsa("#cats button[data-open]").forEach((btn) => {
       btn.onclick = () => openDrawer("budget_item", { id: btn.dataset.open, projectId });
     });
   }
@@ -1025,23 +1127,35 @@ async function budgetPage(projectId) {
     const categoryId = cats?.[0]?.id;
     if (!categoryId) return;
 
-    const ins = await supabase.from("budget_items").insert({
-      project_id: projectId,
-      category_id: categoryId,
-      item_name: "새 예산 항목",
-      estimate: 0,
-      actual: 0,
-      paid: 0,
-      sort_order: Date.now(),
-    }).select("id").single();
+    const ins = await supabase
+      .from("budget_items")
+      .insert({
+        project_id: projectId,
+        category_id: categoryId,
+        item_name: "새 예산 항목",
+        estimate: 0,
+        actual: 0,
+        paid: 0,
+        sort_order: Date.now(),
+      })
+      .select("id")
+      .single();
 
     openDrawer("budget_item", { id: ins.data.id, projectId });
   };
 
   const ch = supabase
     .channel("budget")
-    .on("postgres_changes", { event: "*", schema: "public", table: "budget_categories", filter: `project_id=eq.${projectId}` }, load)
-    .on("postgres_changes", { event: "*", schema: "public", table: "budget_items", filter: `project_id=eq.${projectId}` }, load)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "budget_categories", filter: `project_id=eq.${projectId}` },
+      load
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "budget_items", filter: `project_id=eq.${projectId}` },
+      load
+    )
     .subscribe();
 
   window.__cleanup?.();
@@ -1050,9 +1164,7 @@ async function budgetPage(projectId) {
   await load();
 }
 
-
-
-
+// ---------- Render ----------
 async function render() {
   await ensureAuthFromUrl();
 
@@ -1072,11 +1184,9 @@ async function render() {
   if (r === "/checklist") return checklistPage(projectId);
   if (r === "/budget") return budgetPage(projectId);
 
-  // unknown route
   location.hash = "#/timeline";
 }
 
 window.addEventListener("hashchange", render);
 render();
- 
 
