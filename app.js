@@ -108,47 +108,12 @@ function iconSvg(name, active = false) {
 function iconBadge(svg, active = false) {
   // circle badge like the reference (soft + border)
   const bg = active
-    ? "bg-white/75 border-white/80 shadow-[0_12px_26px_rgba(97,134,228,0.20)]"
+    ? "bg-[rgba(241,251,153,0.45)] border-white/80 shadow-[0_12px_26px_rgba(241,251,153,0.22)]"
     : "bg-white/55 border-white/70";
   return `
     <span class="inline-flex items-center justify-center w-10 h-10 rounded-[18px] border ${bg}">
       ${svg}
     </span>
-  `;
-}
-
-// ---------- Mascot (original bunny-ish sticker, not a specific character) ----------
-function mascotSvg(size = 64) {
-  const s = Number(size) || 64;
-  return `
-  <svg width="${s}" height="${s}" viewBox="0 0 120 120" fill="none" aria-hidden="true">
-    <defs>
-      <linearGradient id="m_g" x1="16" y1="10" x2="104" y2="110" gradientUnits="userSpaceOnUse">
-        <stop stop-color="${PALETTE.spring}"/>
-        <stop offset="0.55" stop-color="#FFFFFF"/>
-        <stop offset="1" stop-color="${PALETTE.twilight}"/>
-      </linearGradient>
-      <filter id="m_s" x="-20" y="-20" width="160" height="160" color-interpolation-filters="sRGB">
-        <feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="rgba(97,134,228,0.28)"/>
-      </filter>
-    </defs>
-
-    <g filter="url(#m_s)">
-      <rect x="14" y="14" width="92" height="92" rx="28" fill="url(#m_g)" opacity="0.95"/>
-      <rect x="14" y="14" width="92" height="92" rx="28" stroke="rgba(255,255,255,0.75)" stroke-width="2"/>
-    </g>
-
-    <!-- ears -->
-    <path d="M46 40c-6-10-8-19-4-24 5-6 14 1 18 12" stroke="rgba(15,23,42,0.35)" stroke-width="4" stroke-linecap="round"/>
-    <path d="M74 40c6-10 8-19 4-24-5-6-14 1-18 12" stroke="rgba(15,23,42,0.35)" stroke-width="4" stroke-linecap="round"/>
-
-    <!-- face -->
-    <circle cx="60" cy="70" r="24" fill="rgba(255,255,255,0.65)" stroke="rgba(255,255,255,0.75)" stroke-width="2"/>
-    <circle cx="52" cy="68" r="3.2" fill="rgba(15,23,42,0.55)"/>
-    <circle cx="68" cy="68" r="3.2" fill="rgba(15,23,42,0.55)"/>
-    <path d="M60 72c-2 0-4 1-4 3 0 2 2 3 4 3s4-1 4-3c0-2-2-3-4-3Z" fill="rgba(15,23,42,0.18)"/>
-    <path d="M56 82c2 2 6 2 8 0" stroke="rgba(15,23,42,0.35)" stroke-width="3" stroke-linecap="round"/>
-  </svg>
   `;
 }
 
@@ -181,10 +146,9 @@ const UI = {
     "bg-white/60 border border-white/75 hover:bg-white/80 transition",
   btnPrimary:
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 " +
-    "text-[12.5px] font-semibold text-slate-900 " +
-    "bg-[linear-gradient(135deg,rgba(241,251,153,0.95),rgba(255,255,255,0.70),rgba(97,134,228,0.65))] " +
-    "border border-white/70 hover:bg-white/85 transition " +
-    "shadow-[0_18px_44px_rgba(97,134,228,0.22)]",
+    "text-[12.5px] font-semibold text-white " +
+    "bg-[#6186E4] hover:bg-[#567AE0] transition " +
+    "border border-white/55 shadow-[0_18px_44px_rgba(97,134,228,0.30)]",
   btnDanger:
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 " +
     "text-[12.5px] font-semibold text-rose-700 " +
@@ -206,7 +170,7 @@ const UI = {
     "text-[11.5px] text-slate-900/80 bg-white/55 border border-white/75",
   pillStrong:
     "inline-flex items-center gap-1.5 rounded-full px-3 py-1 " +
-    "text-[11.5px] font-semibold text-slate-900 bg-white/70 border border-white/80",
+    "text-[11.5px] font-semibold text-slate-900 bg-[rgba(241,251,153,0.55)] border border-white/80",
 
   // nav
   navLink:
@@ -217,9 +181,9 @@ const UI = {
 
   // chat-bubble row
   bubble:
-    "w-full text-left rounded-[26px] p-4 sm:p-[18px] " +
-    "bg-[linear-gradient(135deg,rgba(241,251,153,0.40),rgba(255,255,255,0.55),rgba(97,134,228,0.22))] " +
-    "border border-white/70 hover:bg-white/80 transition " +
+    "w-full text-left rounded-[26px] p-4 sm:p-[18px] relative overflow-hidden " +
+    "bg-white/60 border border-white/75 border-l-[6px] border-l-[#F1FB99] " +
+    "hover:bg-white/80 transition " +
     "shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
 };
 
@@ -883,7 +847,7 @@ function layoutShell(userEmail) {
         <div class="${UI.cardInner}">
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-start gap-3">
-              <div class="shrink-0">${mascotSvg(56)}</div>
+              <div class="shrink-0">${iconBadge(iconSvg("sparkle", true), true)}</div>
               <div class="min-w-0">
                 <div class="text-[15px] font-semibold tracking-tight text-slate-900">Planner</div>
                 <div class="${UI.sub} mt-1 truncate">${escapeHtml(userEmail || "")}</div>
@@ -970,7 +934,7 @@ function loginView() {
     <div class="${UI.card} w-full max-w-sm">
       <div class="${UI.cardInner} space-y-4">
         <div class="flex items-center gap-3">
-          <div>${mascotSvg(56)}</div>
+          <div>${iconBadge(iconSvg("sparkle", true), true)}</div>
           <div>
             <div class="text-[18px] font-semibold tracking-tight text-slate-900">로그인</div>
             <div class="${UI.sub} mt-1">매직 링크로 들어와.</div>
@@ -1028,7 +992,7 @@ async function overviewPage(projectId) {
           ${iconBadge(iconSvg("checklist", true), true)}
         </div>
         <div class="mt-3 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
-          <div id="ov_ck_bar" class="h-full bg-[linear-gradient(90deg,rgba(241,251,153,0.85),rgba(97,134,228,0.65))]" style="width:0%"></div>
+          <div id="ov_ck_bar" class="h-full bg-[#6186E4]" style="width:0%"></div>
         </div>
       </div>
 
@@ -1061,7 +1025,7 @@ async function overviewPage(projectId) {
           <div class="text-[14px] font-semibold text-slate-900">오늘의 포인트</div>
           <div class="${UI.sub} mt-1">빈 곳에는 스티커가 살짝 등장해</div>
         </div>
-        <div class="shrink-0">${mascotSvg(56)}</div>
+        <div class="shrink-0">${iconBadge(iconSvg("sparkle", true), true)}</div>
       </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         <a class="${UI.btn} w-full" href="#/timeline">행사일정 보기</a>
@@ -1144,7 +1108,7 @@ async function ceremonyPage(projectId) {
           <div class="${UI.sub} mt-1">${row.date ? `${escapeHtml(row.date)}` : "날짜 미정"} · ${row.start_time ? `${escapeHtml(String(row.start_time).slice(0,5))}` : "시간 미정"}</div>
           <div class="${UI.sub} mt-1">${row.location ? `${escapeHtml(row.location)}` : "장소 미정"}</div>
         </div>
-        <div class="shrink-0">${mascotSvg(48)}</div>
+        <div class="shrink-0">${iconBadge(iconSvg("sparkle", true), true)}</div>
       </div>
 
       <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1312,7 +1276,7 @@ async function vendorsPage(projectId) {
             <div class="text-[13.5px] font-semibold text-slate-900">업체가 아직 없어</div>
             <div class="${UI.sub} mt-1">오른쪽 위 ‘추가’로 하나 만들어봐.</div>
           </div>
-          ${mascotSvg(56)}
+          ${iconBadge(iconSvg("sparkle", true), true)}
         </div>
       </div>`;
 
@@ -1454,7 +1418,7 @@ async function timelinePage(projectId) {
             <div class="text-[13.5px] font-semibold text-slate-900">일정이 없어</div>
             <div class="${UI.sub} mt-1">오른쪽 위 ‘추가’로 하나 만들어봐.</div>
           </div>
-          ${mascotSvg(56)}
+          ${iconBadge(iconSvg("sparkle", true), true)}
         </div>
       </div>`;
 
@@ -1589,7 +1553,7 @@ async function checklistPage(projectId) {
                   <span class="${UI.pill}">${pct}%</span>
                 </div>
                 <div class="mt-2 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
-                  <div class="h-full bg-[linear-gradient(90deg,rgba(241,251,153,0.85),rgba(97,134,228,0.65))]" style="width:${pct}%;"></div>
+                  <div class="h-full bg-[#6186E4]" style="width:${pct}%;"></div>
                 </div>
               </div>
               <button class="${UI.btnSm}" data-add="${s.id}">추가</button>
@@ -1943,7 +1907,7 @@ async function notesPage(projectId) {
             <div class="text-[13.5px] font-semibold text-slate-900">메모가 없어</div>
             <div class="${UI.sub} mt-1">오른쪽 위 ‘추가’로 시작해봐.</div>
           </div>
-          ${mascotSvg(56)}
+          ${iconBadge(iconSvg("sparkle", true), true)}
         </div>
       </div>`;
 
