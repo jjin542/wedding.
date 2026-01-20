@@ -3,68 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+
     <title>Planner</title>
 
-    <!-- Gmarket Sans (Noonnu CDN) -->
-    <style>
-      @font-face {
-        font-family: 'GmarketSans';
-        font-weight: 300;
-        font-style: normal;
-        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff') format('woff');
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'GmarketSans';
-        font-weight: 500;
-        font-style: normal;
-        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
-        font-display: swap;
-      }
-      @font-face {
-        font-family: 'GmarketSans';
-        font-weight: 700;
-        font-style: normal;
-        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
-        font-display: swap;
-      }
+   <style>
 
-      html, body { height: 100%; }
-      body { font-family: GmarketSans, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 
-      /* 배경은 뉴트럴 + 두 컬러는 "glow"로만 살짝 */
-      .canvas {
-        min-height: 100vh;
-        background: linear-gradient(180deg, rgba(246,249,255,1) 0%, rgba(255,255,255,0.92) 55%, rgba(246,249,255,1) 100%);
-        position: relative;
-        overflow: hidden;
-      }
-      .canvas::before,
-      .canvas::after {
-        content: "";
-        position: absolute;
-        inset: -20%;
-        pointer-events: none;
-        filter: blur(40px);
-        opacity: .55;
-      }
-      /* Spring Light glow */
-      .canvas::before {
-        background: radial-gradient(circle at 20% 15%, rgba(241,251,153,0.65) 0%, rgba(241,251,153,0.0) 55%);
-      }
-      /* Twilight Blue glow */
-      .canvas::after {
-        background: radial-gradient(circle at 85% 80%, rgba(97,134,228,0.45) 0%, rgba(97,134,228,0.0) 58%);
-      }
+html, body { height: 100%; }
+body {
+  font-family: Pretendard, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #1f2a37;
+}
 
-      /* 아주 약한 노이즈 */
-      .noise {
-        background-image: radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px);
-        background-size: 18px 18px;
-        opacity: 0.18;
-        pointer-events: none;
-      }
-    </style>
+.grain{
+  background-image: radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+.blob { filter: blur(40px); opacity: 0.55; }
+.blob-1 { background: #cdb4ff; } /* lilac */
+.blob-2 { background: #b8f2e6; } /* mint */
+.blob-3 { background: #ffc9de; } /* pink */
+.blob-4 { background: #a9c9ff; } /* sky */
+
+:root{
+  --accent: #2F5BFF;
+  --accent-weak: rgba(47,91,255,0.14);
+  --accent-weak2: rgba(47,91,255,0.08);
+}
+.bg-accent { background: var(--accent); }
+.chip-accent { background: var(--accent-weak); }
+.chip-accent2 { background: var(--accent-weak2); }
+</style>
+
 
     <!-- Tailwind CDN (개인용/프로토타입 OK) -->
     <script>
