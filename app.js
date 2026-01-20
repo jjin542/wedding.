@@ -119,73 +119,70 @@ function iconBadge(svg, active = false) {
 
 // ---------- UI classes (smaller + bubble-like) ----------
 const UI = {
-  pageWrap: "min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-10",
+  pageWrap: "min-h-screen p-4 sm:p-6 md:p-10 flex items-start justify-center",
   shell: "w-full max-w-6xl grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:gap-5",
 
-  // glass base
-  card:
-    "backdrop-blur-2xl bg-white/60 border border-white/65 " +
-    "shadow-[0_24px_80px_rgba(97,134,228,0.20),0_14px_34px_rgba(0,0,0,0.10)] " +
-    "rounded-[28px]",
+  card: "backdrop-blur-2xl bg-white/60 border border-white/75 shadow-soft rounded-[28px]",
   cardInner: "p-5 sm:p-6",
 
-  // typography (smaller)
-  title: "text-[18px] sm:text-[19px] font-semibold tracking-tight text-slate-900",
+  h1: "text-[17px] sm:text-[18px] font-bold tracking-tight text-ink",
+  h2: "text-[12.5px] font-bold text-ink",
   sub: "text-[12px] text-slate-700/80",
-  label: "text-[11.5px] text-slate-700/75",
+  tiny:"text-[11px] text-slate-700/70",
+  label:"text-[11px] text-slate-700/75",
 
-  // buttons
+  navLink:
+    "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-[12.5px] " +
+    "text-slate-800/85 hover:bg-white/60 transition",
+  navLinkActive:
+    "bg-white/85 border border-white/90 shadow-[0_14px_40px_rgba(0,0,0,0.06)]",
+
   btn:
-    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 " +
-    "text-[12.5px] font-medium text-slate-900/90 " +
-    "bg-white/60 border border-white/75 hover:bg-white/80 transition " +
-    "shadow-[0_10px_22px_rgba(0,0,0,0.06)]",
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[12px] font-medium text-ink bg-white/65 border border-white/80 " +
+    "hover:bg-white/85 transition shadow-[0_10px_30px_rgba(0,0,0,0.06)]",
   btnSm:
     "inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 " +
-    "text-[12px] font-medium text-slate-900/90 " +
-    "bg-white/60 border border-white/75 hover:bg-white/80 transition",
+    "text-[11px] font-medium text-ink bg-white/65 border border-white/80 hover:bg-white/85 transition",
+
   btnPrimary:
-    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 " +
-    "text-[12.5px] font-semibold text-white " +
-    "bg-[#6186E4] hover:bg-[#567AE0] transition " +
-    "border border-white/55 shadow-[0_18px_44px_rgba(97,134,228,0.30)]",
-  btnDanger:
-    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 " +
-    "text-[12.5px] font-semibold text-rose-700 " +
-    "bg-white/60 border border-rose-200/80 hover:bg-rose-50/70 transition",
+    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
+    "text-[12px] font-bold text-white bg-accent " +
+    "hover:brightness-[0.98] transition shadow-[0_18px_55px_rgba(47,91,255,0.18)]",
 
-  // inputs
   input:
-    "w-full rounded-2xl border border-white/75 bg-white/70 px-4 py-3 " +
-    "text-[12.5px] text-slate-900 placeholder:text-slate-400 " +
-    "outline-none focus:ring-2 focus:ring-[rgba(97,134,228,0.22)]",
+    "w-full rounded-2xl border border-white/85 bg-white/75 px-4 py-3 " +
+    "text-[12.5px] text-ink placeholder:text-slate-400 outline-none " +
+    "focus:ring-2 focus:ring-[rgba(47,91,255,0.18)]",
+
   textarea:
-    "w-full rounded-2xl border border-white/75 bg-white/70 px-4 py-3 " +
-    "text-[12.5px] text-slate-900 placeholder:text-slate-400 " +
-    "outline-none focus:ring-2 focus:ring-[rgba(97,134,228,0.22)]",
+    "w-full rounded-2xl border border-white/85 bg-white/75 px-4 py-3 " +
+    "text-[12.5px] text-ink placeholder:text-slate-400 outline-none " +
+    "focus:ring-2 focus:ring-[rgba(47,91,255,0.18)]",
 
-  // pills
   pill:
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 " +
-    "text-[11.5px] text-slate-900/80 bg-white/55 border border-white/75",
-  pillStrong:
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 " +
-    "text-[11.5px] font-semibold text-slate-900 bg-[rgba(241,251,153,0.55)] border border-white/80",
+    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
+    "text-[11px] text-ink/90 bg-white/60 border border-white/80",
+  pillAccent:
+    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
+    "text-[11px] font-medium text-ink chip-accent border border-white/80",
 
-  // nav
-  navLink:
-    "flex items-center gap-3 px-3 py-2.5 rounded-2xl " +
-    "text-[12.5px] text-slate-900/80 hover:bg-white/55 transition",
-  navLinkActive:
-    "bg-white/70 text-slate-900 shadow-[0_12px_28px_rgba(97,134,228,0.16)] border border-white/80",
-
-  // chat-bubble row
   bubble:
-    "w-full text-left rounded-[26px] p-4 sm:p-[18px] relative overflow-hidden " +
-    "bg-white/60 border border-white/75 border-l-[6px] border-l-[#F1FB99] " +
-    "hover:bg-white/80 transition " +
-    "shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
+    "relative w-full text-left rounded-[24px] p-4 sm:p-[18px] " +
+    "bg-white/65 border border-white/85 hover:bg-white/85 transition " +
+    "shadow-[0_14px_45px_rgba(0,0,0,0.07)] overflow-hidden",
+
+  bubbleOverlay:
+    "absolute inset-0 pointer-events-none",
 };
+
+function bubbleOverlayStyle() {
+  return `background:
+    radial-gradient(circle at 18% 20%, var(--accent-weak), transparent 62%),
+    radial-gradient(circle at 82% 30%, rgba(255,255,255,0.55), transparent 62%),
+    radial-gradient(circle at 70% 90%, var(--accent-weak2), transparent 55%);`;
+}
+
 
 // ---------- Routing ----------
 function getRoute() {
@@ -1545,7 +1542,9 @@ async function checklistPage(projectId) {
 
         return `
           <div class="${UI.bubble}">
-            <div class="flex items-center justify-between gap-3">
+  <div class="${UI.bubbleOverlay}" style="${bubbleOverlayStyle()}"></div>
+  <div class="relative flex items-center justify-between gap-3">
+
               <div class="min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <div class="text-[13.5px] font-semibold text-slate-900">${escapeHtml(s.title)}</div>
