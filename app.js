@@ -4,36 +4,43 @@ const SUPABASE_URL = "https://ibjjbgthwmpvifbzxhwa.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliampiZ3Rod21wdmlmYnp4aHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NjExMTcsImV4cCI6MjA4NDQzNzExN30.Bb3fyGlJ_16gao6W8P0yaMotsD5DIEeTJVan3m5OKQw";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ✅ "로그인 한 번 하면 계속 유지" 세팅을 명시적으로 켜둠
+// - persistSession: localStorage에 세션 저장
+// - autoRefreshToken: access token 자동 갱신
+// - detectSessionInUrl: 매직링크/PKCE 콜백 처리 자동 보조
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: "pkce",
+    storageKey: "wedding_planner_session_v1",
+  },
+});
 
 const app = document.getElementById("app");
 
+// ---------- UI Tokens (Glass) ----------
 const UI = {
-  // layout
   pageWrap: "min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-10",
   shell: "w-full max-w-6xl grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:gap-5",
 
-  // glass card
   card:
     "backdrop-blur-2xl bg-white/65 border border-white/60 " +
     "shadow-[0_20px_70px_rgba(124,58,237,0.15),0_12px_28px_rgba(0,0,0,0.10)] " +
     "rounded-[28px]",
   cardInner: "p-5 sm:p-6",
 
-  // typography
   h1: "text-[22px] sm:text-[24px] font-semibold tracking-tight text-slate-900",
-  h2: "text-[14px] font-semibold tracking-tight text-slate-900",
   sub: "text-[12.5px] text-slate-600/90",
   label: "text-[12px] text-slate-600/90",
 
-  // nav
   navLink:
     "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl " +
     "text-[13.5px] text-slate-700/90 hover:bg-white/55 transition",
   navLinkActive:
     "bg-white/70 text-slate-900 shadow-[0_8px_18px_rgba(0,0,0,0.06)] border border-white/70",
 
-  // buttons
   btn:
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
     "text-[13px] font-medium text-slate-800 " +
@@ -54,7 +61,6 @@ const UI = {
     "hover:from-violet-700 hover:via-fuchsia-600 hover:to-pink-600 transition " +
     "shadow-[0_18px_45px_rgba(124,58,237,0.30)]",
 
-  // inputs
   input:
     "w-full rounded-2xl border border-white/70 bg-white/70 px-4 py-3 " +
     "text-[13.5px] text-slate-900 placeholder:text-slate-400 " +
@@ -64,7 +70,6 @@ const UI = {
     "text-[13.5px] text-slate-900 placeholder:text-slate-400 " +
     "outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-white/70",
 
-  // pills/chips
   pill:
     "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 " +
     "text-[12px] text-slate-700 bg-white/60 border border-white/70",
@@ -72,20 +77,19 @@ const UI = {
     "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 " +
     "text-[12px] font-semibold text-slate-900 bg-white/75 border border-white/80",
 
-  // list row (bubble)
   row:
     "w-full text-left rounded-[22px] p-4 sm:p-[18px] " +
     "bg-white/55 border border-white/70 hover:bg-white/80 transition " +
     "shadow-[0_10px_28px_rgba(0,0,0,0.07)]",
 };
 
+// ---------- Helpers ----------
 function qs(sel) {
   return document.querySelector(sel);
 }
 function qsa(sel) {
   return Array.from(document.querySelectorAll(sel));
 }
-
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;",
@@ -95,15 +99,41 @@ function escapeHtml(s) {
     "'": "&#39;",
   }[c]));
 }
-
 function isAuthHash() {
   return location.hash.startsWith("#access_token=") || location.hash.startsWith("#error=");
 }
-
 function getRoute() {
   const h = location.hash || "#/timeline";
   if (h.startsWith("#/")) return h.slice(1);
   return "/timeline";
+}
+function hhmmToTime(hhmm) {
+  if (!hhmm) return null;
+  return hhmm.length === 5 ? `${hhmm}:00` : hhmm;
+}
+function timeToHHMM(t) {
+  if (!t) return "";
+  return String(t).slice(0, 5);
+}
+function moneyFmt(x) {
+  const v = Number(x);
+  const n = Number.isFinite(v) ? v : 0;
+  return Math.round(n).toLocaleString("ko-KR");
+}
+
+// ✅ int4(sort_order) 범위 안전: Date.now() 쓰면 13자리라 400 터짐
+function nowOrder() {
+  return Math.floor(Date.now() / 1000); // seconds (<= 2,147,483,647 until 2038)
+}
+
+async function insertReturnId(table, row) {
+  const { data, error } = await supabase.from(table).insert(row).select("id").single();
+  if (error) {
+    console.error(`[insert ${table}]`, error);
+    alert(error.message);
+    return null;
+  }
+  return data?.id ?? null;
 }
 
 async function ensureAuthFromUrl() {
@@ -111,7 +141,8 @@ async function ensureAuthFromUrl() {
   const url = new URL(location.href);
   const code = url.searchParams.get("code");
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) console.error("exchangeCodeForSession error:", error);
     url.searchParams.delete("code");
     history.replaceState({}, "", url.toString());
   }
@@ -125,7 +156,8 @@ async function ensureAuthFromUrl() {
     if (error) console.error("Auth error:", error);
 
     if (access_token && refresh_token) {
-      await supabase.auth.setSession({ access_token, refresh_token });
+      const { error: e2 } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (e2) console.error("setSession error:", e2);
     }
     location.hash = "#/timeline";
   }
@@ -157,32 +189,13 @@ function setDrawerOpen(open) {
     drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
   }
 }
-
 function closeDrawer() {
   setDrawerOpen(false);
 }
-
 function setDrawerStatus(msg) {
   const el = qs("#drawerStatus");
   if (el) el.textContent = msg || "";
 }
-
-function hhmmToTime(hhmm) {
-  if (!hhmm) return null;
-  return hhmm.length === 5 ? `${hhmm}:00` : hhmm;
-}
-
-function timeToHHMM(t) {
-  if (!t) return "";
-  return String(t).slice(0, 5);
-}
-
-function moneyFmt(x) {
-  const v = Number(x);
-  const n = Number.isFinite(v) ? v : 0;
-  return Math.round(n).toLocaleString("ko-KR");
-}
-
 async function safeUpdate(table, id, patch) {
   setDrawerStatus("저장 중...");
   const { error } = await supabase.from(table).update(patch).eq("id", id);
@@ -193,7 +206,6 @@ async function safeUpdate(table, id, patch) {
   setDrawerStatus("저장됨");
   return true;
 }
-
 function bindSave(selector, fn) {
   const el = qs(selector);
   if (!el) return;
@@ -207,7 +219,6 @@ function bindSave(selector, fn) {
   el.addEventListener("change", handler);
   el.addEventListener("blur", handler);
 }
-
 async function openDrawer(kind, { id, projectId, ...extra }) {
   drawerState = { open: true, kind, id, projectId, extra };
   setDrawerOpen(true);
@@ -220,7 +231,6 @@ async function renderDrawer() {
   const contentEl = qs("#drawerContent");
   if (!titleEl || !contentEl) return;
 
-  // 공통 헤더 뱃지
   const headerBadge = (emoji, label) =>
     `<span class="${UI.pillStrong}">${emoji} ${escapeHtml(label)}</span>`;
 
@@ -229,7 +239,11 @@ async function renderDrawer() {
 
     const [{ data: ev, error: e1 }, { data: days, error: e2 }] = await Promise.all([
       supabase.from("timeline_events").select("*").eq("id", id).single(),
-      supabase.from("timeline_days").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
+      supabase
+        .from("timeline_days")
+        .select("id,title,sort_order")
+        .eq("project_id", projectId)
+        .order("sort_order"),
     ]);
     if (e1 || e2) {
       contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
@@ -326,7 +340,11 @@ async function renderDrawer() {
 
     const [{ data: it, error: e1 }, { data: sections, error: e2 }] = await Promise.all([
       supabase.from("checklist_items").select("*").eq("id", id).single(),
-      supabase.from("checklist_sections").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
+      supabase
+        .from("checklist_sections")
+        .select("id,title,sort_order")
+        .eq("project_id", projectId)
+        .order("sort_order"),
     ]);
     if (e1 || e2) {
       contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
@@ -400,7 +418,11 @@ async function renderDrawer() {
 
     const [{ data: it, error: e1 }, { data: cats, error: e2 }] = await Promise.all([
       supabase.from("budget_items").select("*").eq("id", id).single(),
-      supabase.from("budget_categories").select("id,title,sort_order").eq("project_id", projectId).order("sort_order"),
+      supabase
+        .from("budget_categories")
+        .select("id,title,sort_order")
+        .eq("project_id", projectId)
+        .order("sort_order"),
     ]);
     if (e1 || e2) {
       contentEl.innerHTML = `<div class="text-sm text-rose-700">${escapeHtml((e1 || e2).message)}</div>`;
@@ -487,7 +509,7 @@ async function renderDrawer() {
   contentEl.innerHTML = `<div class="${UI.sub}">지원하지 않는 패널</div>`;
 }
 
-// ---------- Data helpers ----------
+// ---------- Data ----------
 async function getProjectId() {
   const { data, error } = await supabase
     .from("projects")
@@ -562,7 +584,6 @@ function layoutShell(userEmail) {
     </div>
   </div>`;
 
-  // active 메뉴 표시
   const r = (location.hash || "#/timeline").replace("#", "");
   qsa("#nav a[data-route]").forEach((a) => {
     if (a.getAttribute("data-route") === r) a.classList.add(...UI.navLinkActive.split(" "));
@@ -587,6 +608,7 @@ function layoutShell(userEmail) {
 }
 
 function loginView() {
+  const saved = localStorage.getItem("wp_last_email") || "";
   app.innerHTML = `
   <div class="${UI.pageWrap}">
     <div class="${UI.card} w-full max-w-sm">
@@ -596,10 +618,10 @@ function loginView() {
             <span class="${UI.pillStrong}">💍</span>
             <h1 class="${UI.h1}">로그인</h1>
           </div>
-          <p class="${UI.sub} mt-1">매직 링크로 바로 들어와.</p>
+          <p class="${UI.sub} mt-1">매직 링크 한 번 로그인하면 세션이 저장돼서 다음엔 자동으로 들어와.</p>
         </div>
 
-        <input id="email" class="${UI.input}" placeholder="email@example.com" />
+        <input id="email" class="${UI.input}" placeholder="email@example.com" value="${escapeHtml(saved)}" />
         <button id="send" class="${UI.btnPrimary} w-full">✉️ 매직 링크 보내기</button>
 
         <p id="msg" class="${UI.sub}"></p>
@@ -610,11 +632,17 @@ function loginView() {
   qs("#send").onclick = async () => {
     const email = qs("#email").value.trim();
     if (!email) return;
+    localStorage.setItem("wp_last_email", email);
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: location.origin + location.pathname },
+      options: {
+        emailRedirectTo: location.origin + location.pathname,
+        shouldCreateUser: true,
+      },
     });
-    qs("#msg").textContent = error ? error.message : "메일함에서 링크를 눌러줘!";
+
+    qs("#msg").textContent = error ? error.message : "메일함에서 링크를 눌러줘! (다음부터는 자동 로그인)";
   };
 }
 
@@ -638,18 +666,16 @@ async function timelinePage(projectId) {
   `;
 
   async function loadDays() {
-    const res = await supabase
+    return await supabase
       .from("timeline_days")
       .select("id,title,sort_order")
       .eq("project_id", projectId)
       .order("sort_order");
-    return res;
   }
 
   let { data: days } = await loadDays();
   days = days || [];
 
-  // 기본 day 보장
   if (days.length === 0) {
     const ins = await supabase
       .from("timeline_days")
@@ -755,10 +781,14 @@ async function timelinePage(projectId) {
       .select("id")
       .single();
 
+    if (ins.error) {
+      console.error(ins.error);
+      alert(ins.error.message);
+      return;
+    }
     openDrawer("timeline_event", { id: ins.data.id, projectId });
   };
 
-  // realtime
   const ch = supabase
     .channel("timeline")
     .on("postgres_changes", { event: "*", schema: "public", table: "timeline_events", filter: `project_id=eq.${projectId}` }, load)
@@ -797,18 +827,20 @@ async function checklistPage(projectId) {
   `;
 
   async function ensureTemplate() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("checklist_sections")
       .select("id")
       .eq("project_id", projectId)
       .limit(1);
 
+    if (error) throw error;
     if (data && data.length > 0) return;
 
     const defaults = ["6개월 전", "3개월 전", "1개월 전", "2주 전", "1주 전", "당일"];
-    await supabase.from("checklist_sections").insert(
+    const { error: e2 } = await supabase.from("checklist_sections").insert(
       defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i }))
     );
+    if (e2) throw e2;
   }
 
   async function load() {
@@ -888,18 +920,18 @@ async function checklistPage(projectId) {
       `;
     }).join("");
 
-    // add item in section
+    // add item in section (✅ Date.now() 금지 -> nowOrder + 에러 체크)
     qsa("#sections button[data-add]").forEach(btn => {
       btn.onclick = async () => {
         const sectionId = btn.dataset.add;
-        const ins = await supabase.from("checklist_items").insert({
+        const id = await insertReturnId("checklist_items", {
           project_id: projectId,
           section_id: sectionId,
           title: "새 할 일",
-          sort_order: Date.now(),
-        }).select("id").single();
-
-        openDrawer("checklist_item", { id: ins.data.id, projectId });
+          sort_order: nowOrder(),
+        });
+        if (!id) return;
+        openDrawer("checklist_item", { id, projectId });
       };
     });
 
@@ -908,7 +940,8 @@ async function checklistPage(projectId) {
       cb.onclick = (e) => e.stopPropagation();
       cb.onchange = async () => {
         const id = cb.dataset.toggle;
-        await supabase.from("checklist_items").update({ is_done: cb.checked }).eq("id", id);
+        const { error } = await supabase.from("checklist_items").update({ is_done: cb.checked }).eq("id", id);
+        if (error) console.error(error);
       };
     });
 
@@ -919,24 +952,29 @@ async function checklistPage(projectId) {
   }
 
   qs("#addItem").onclick = async () => {
-    const { data: sec } = await supabase
+    const { data: sec, error } = await supabase
       .from("checklist_sections")
       .select("id")
       .eq("project_id", projectId)
       .order("sort_order")
       .limit(1);
+    if (error) {
+      console.error(error);
+      alert(error.message);
+      return;
+    }
 
     const sectionId = sec?.[0]?.id;
     if (!sectionId) return;
 
-    const ins = await supabase.from("checklist_items").insert({
+    const id = await insertReturnId("checklist_items", {
       project_id: projectId,
       section_id: sectionId,
       title: "새 할 일",
-      sort_order: Date.now(),
-    }).select("id").single();
-
-    openDrawer("checklist_item", { id: ins.data.id, projectId });
+      sort_order: nowOrder(),
+    });
+    if (!id) return;
+    openDrawer("checklist_item", { id, projectId });
   };
 
   const ch = supabase
@@ -980,9 +1018,10 @@ async function budgetPage(projectId) {
     if (data && data.length > 0) return;
 
     const defaults = ["예식장", "스드메", "스냅/영상", "부케/플라워", "청첩장", "기타"];
-    await supabase.from("budget_categories").insert(
+    const { error: e2 } = await supabase.from("budget_categories").insert(
       defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i }))
     );
+    if (e2) throw e2;
   }
 
   function n(x) {
@@ -1050,63 +1089,58 @@ async function budgetPage(projectId) {
             </div>
             <button class="${UI.btnSm}" data-add="${c.id}">＋ 추가</button>
           </div>
-                    <div class="mt-4 space-y-2">
+
+          <div class="mt-4 space-y-2">
             ${
               list.length === 0
                 ? `<div class="${UI.sub}">항목이 없어.</div>`
-                : list
-                    .map((it) => {
-                      const remaining = Math.max(0, n(it.actual) - n(it.paid));
-                      return `
-                        <button data-open="${it.id}" class="w-full ${UI.row} !p-3">
-                          <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                              <div class="flex items-center gap-2">
-                                <span class="${UI.pillStrong}">🧾</span>
-                                <div class="text-[14px] font-semibold text-slate-900 truncate">
-                                  ${escapeHtml(it.item_name || "항목")}
-                                </div>
-                              </div>
-
-                              <div class="mt-2 flex flex-wrap gap-2">
-                                <span class="${UI.pill}">예상 <b class="font-semibold">${moneyFmt(it.estimate)}</b></span>
-                                <span class="${UI.pill}">실제 <b class="font-semibold">${moneyFmt(it.actual)}</b></span>
-                                <span class="${UI.pill}">지불 <b class="font-semibold">${moneyFmt(it.paid)}</b></span>
-                                <span class="${UI.pillStrong}">잔액 <b class="font-semibold">${moneyFmt(remaining)}</b></span>
+                : list.map((it) => {
+                    const remaining = Math.max(0, n(it.actual) - n(it.paid));
+                    return `
+                      <button data-open="${it.id}" class="w-full ${UI.row} !p-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                              <span class="${UI.pillStrong}">🧾</span>
+                              <div class="text-[14px] font-semibold text-slate-900 truncate">
+                                ${escapeHtml(it.item_name || "항목")}
                               </div>
                             </div>
 
-                            <span class="${UI.sub} mt-1">열기 →</span>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                              <span class="${UI.pill}">예상 <b class="font-semibold">${moneyFmt(it.estimate)}</b></span>
+                              <span class="${UI.pill}">실제 <b class="font-semibold">${moneyFmt(it.actual)}</b></span>
+                              <span class="${UI.pill}">지불 <b class="font-semibold">${moneyFmt(it.paid)}</b></span>
+                              <span class="${UI.pillStrong}">잔액 <b class="font-semibold">${moneyFmt(remaining)}</b></span>
+                            </div>
                           </div>
-                        </button>
-                      `;
-                    })
-                    .join("")
+
+                          <span class="${UI.sub} mt-1">열기 →</span>
+                        </div>
+                      </button>
+                    `;
+                  }).join("")
             }
           </div>
         </div>
       `;
     }).join("");
 
-    // add in category
+    // add in category (✅ Date.now() 금지 -> nowOrder + 에러 체크)
     qsa("#cats button[data-add]").forEach((btn) => {
       btn.onclick = async () => {
         const categoryId = btn.dataset.add;
-        const ins = await supabase
-          .from("budget_items")
-          .insert({
-            project_id: projectId,
-            category_id: categoryId,
-            item_name: "새 예산 항목",
-            estimate: 0,
-            actual: 0,
-            paid: 0,
-            sort_order: Date.now(),
-          })
-          .select("id")
-          .single();
-
-        openDrawer("budget_item", { id: ins.data.id, projectId });
+        const id = await insertReturnId("budget_items", {
+          project_id: projectId,
+          category_id: categoryId,
+          item_name: "새 예산 항목",
+          estimate: 0,
+          actual: 0,
+          paid: 0,
+          sort_order: nowOrder(),
+        });
+        if (!id) return;
+        openDrawer("budget_item", { id, projectId });
       };
     });
 
@@ -1117,31 +1151,34 @@ async function budgetPage(projectId) {
   }
 
   qs("#addBudget").onclick = async () => {
-    const { data: cats } = await supabase
+    const { data: cats, error } = await supabase
       .from("budget_categories")
       .select("id")
       .eq("project_id", projectId)
       .order("sort_order")
       .limit(1);
 
+    if (error) {
+      console.error(error);
+      alert(error.message);
+      return;
+    }
+
     const categoryId = cats?.[0]?.id;
     if (!categoryId) return;
 
-    const ins = await supabase
-      .from("budget_items")
-      .insert({
-        project_id: projectId,
-        category_id: categoryId,
-        item_name: "새 예산 항목",
-        estimate: 0,
-        actual: 0,
-        paid: 0,
-        sort_order: Date.now(),
-      })
-      .select("id")
-      .single();
+    const id = await insertReturnId("budget_items", {
+      project_id: projectId,
+      category_id: categoryId,
+      item_name: "새 예산 항목",
+      estimate: 0,
+      actual: 0,
+      paid: 0,
+      sort_order: nowOrder(),
+    });
+    if (!id) return;
 
-    openDrawer("budget_item", { id: ins.data.id, projectId });
+    openDrawer("budget_item", { id, projectId });
   };
 
   const ch = supabase
@@ -1187,6 +1224,14 @@ async function render() {
   location.hash = "#/timeline";
 }
 
+// auth 상태 변경 시 자동 렌더(로그인/로그아웃 반영)
+if (!window.__authBound) {
+  window.__authBound = true;
+  supabase.auth.onAuthStateChange(() => {
+    // render는 내부적으로 session을 다시 읽음
+    render();
+  });
+}
+
 window.addEventListener("hashchange", render);
 render();
-
