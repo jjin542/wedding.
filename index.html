@@ -35,36 +35,33 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-  @font-face{
-    font-family:'GmarketSans';
-    src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
-    font-weight:500; font-display:swap;
-  }
-  @font-face{
-    font-family:'GmarketSans';
-    src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
-    font-weight:700; font-display:swap;
-  }
-  html, body { height: 100%; }
-  body { font-family: GmarketSans, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    <style>
+      @font-face {
+        font-family: 'NostalgicMongtori';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-1@1.0/Griun_Mongtori-Rg.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+      }
+      html, body { height: 100%; }
+      body { font-family: NostalgicMongtori, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 
-  .noise {
-    background-image: radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px);
-    background-size: 18px 18px;
-    opacity: 0.12;
-    pointer-events: none;
-  }
-</style>
-
+      /* 살짝 ‘노이즈’ 느낌(선택) */
+      .noise {
+        background-image: radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px);
+        background-size: 18px 18px;
+        opacity: 0.18;
+        pointer-events: none;
+      }
+    </style>
   </head>
 
-<body class="min-h-screen bg-[#F7F8FB]">
-  <div class="min-h-screen">
-    <div class="noise fixed inset-0"></div>
-    <div id="app"></div>
-  </div>
+  <body class="min-h-screen">
+    <!-- 배경 그라데이션 -->
+    <div class="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(241,251,153,0.95)_0%,_rgba(241,251,153,0.55)_30%,_rgba(255,255,255,0.55)_55%,_rgba(97,134,228,0.35)_80%,_rgba(97,134,228,0.65)_100%)]">
+      <div class="noise fixed inset-0"></div>
+      <div id="app"></div>
+    </div>
 
-  <script type="module" src="./app.js"></script>
-</body>
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>
