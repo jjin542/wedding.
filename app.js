@@ -1,9 +1,3 @@
-from pathlib import Path
-import shutil, zipfile, re, textwrap, json
-
-# Build full app.js (overwrite)
-SUPA_URL = "https://ibjjbgthwmpvifbzxhwa.supabase.co"
-SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliampiZ3Rod21wdmlmYnp4aHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NjExMTcsImV4cCI6MjA4NDQzNzExN30.Bb3fyGlJ_16gao6W8P0yaMotsD5DIEeTJVan3m5OKQw"
 
 app_full = f"""import {{ createClient }} from "https://esm.sh/@supabase/supabase-js@2";
 
