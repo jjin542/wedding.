@@ -61,17 +61,18 @@ function hhmmToTime(hhmm) {
   return hhmm.length === 5 ? `${hhmm}:00` : hhmm;
 }
 
-// ---------- Palette (Spring Light + Twilight Blue) ----------
+// ---------- Palette (White + Neon Pink Glass) ----------
 const PALETTE = {
-  spring: "#F1FB99",
-  twilight: "#6186E4",
+  accent: "#FF3BD4",
+  accent2: "#A855F7",
   ink: "#0F172A",
 };
 
 // ---------- Icon system (Iconly-ish: thin, round, gradient stroke) ----------
+ (Iconly-ish: thin, round, gradient stroke) ----------
 function iconSvg(name, active = false) {
-  const strokeA = active ? PALETTE.twilight : "rgba(15,23,42,0.80)";
-  const strokeB = active ? "#8A6BFF" : "rgba(15,23,42,0.60)";
+  const strokeA = active ? PALETTE.accent : "rgba(15,23,42,0.78)";
+  const strokeB = active ? PALETTE.accent2 : "rgba(15,23,42,0.55)";
 
   // prettier gradient id per icon usage
   const gid = `g_${name}_${active ? "a" : "i"}`;
@@ -119,10 +120,10 @@ function iconBadge(svg, active = false) {
 
 // ---------- UI classes (smaller + bubble-like) ----------
 const UI = {
-  pageWrap: "min-h-screen p-4 sm:p-6 md:p-10 flex items-start justify-center",
+  pageWrap: "min-h-screen p-4 sm:p-6 md:p-10 flex items-start justify-center bg-white",
   shell: "w-full max-w-6xl grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 md:gap-5",
 
-  card: "backdrop-blur-2xl bg-white/60 border border-white/75 shadow-soft rounded-[28px]",
+  card: "backdrop-blur-2xl bg-white/75 border border-[rgba(255,59,212,0.28)] shadow-[0_22px_70px_rgba(255,59,212,0.10)] rounded-[28px] ring-1 ring-white/60",
   cardInner: "p-5 sm:p-6",
 
   h1: "text-[17px] sm:text-[18px] font-bold tracking-tight text-ink",
@@ -148,7 +149,7 @@ const UI = {
   btnPrimary:
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
     "text-[12px] font-bold text-white bg-accent " +
-    "hover:brightness-[0.98] transition shadow-[0_18px_55px_rgba(47,91,255,0.18)]",
+    "hover:brightness-[0.98] transition shadow-[0_18px_60px_rgba(255,59,212,0.25)]",
   btnDanger:
     "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 " +
     "text-[12px] font-bold text-white bg-rose-500 " +
@@ -156,14 +157,14 @@ const UI = {
 
 
   input:
-    "w-full rounded-2xl border border-white/85 bg-white/75 px-4 py-3 " +
+    "w-full rounded-2xl border border-[rgba(255,59,212,0.22)] bg-white/85 px-4 py-3 " +
     "text-[12.5px] text-ink placeholder:text-slate-400 outline-none " +
-    "focus:ring-2 focus:ring-[rgba(47,91,255,0.18)]",
+    "focus:ring-2 focus:ring-[rgba(255,59,212,0.25)]",
 
   textarea:
-    "w-full rounded-2xl border border-white/85 bg-white/75 px-4 py-3 " +
+    "w-full rounded-2xl border border-[rgba(255,59,212,0.22)] bg-white/85 px-4 py-3 " +
     "text-[12.5px] text-ink placeholder:text-slate-400 outline-none " +
-    "focus:ring-2 focus:ring-[rgba(47,91,255,0.18)]",
+    "focus:ring-2 focus:ring-[rgba(255,59,212,0.25)]",
 
   pill:
     "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
@@ -173,17 +174,56 @@ const UI = {
     "text-[11px] font-medium text-ink chip-accent border border-white/80",
   pillStrong:
     "inline-flex items-center gap-2 rounded-full px-3 py-1.5 " +
-    "text-[11px] font-semibold text-white bg-accent border border-white/70",
+    "text-[11px] font-semibold text-white bg-accent border border-white/70 shadow-[0_10px_30px_rgba(255,59,212,0.22)]",
 
 
   bubble:
     "relative w-full text-left rounded-[24px] p-4 sm:p-[18px] " +
-    "bg-white/65 border border-white/85 hover:bg-white/85 transition " +
-    "shadow-[0_14px_45px_rgba(0,0,0,0.07)] overflow-hidden",
+    "bg-white/78 border border-[rgba(255,59,212,0.22)] hover:bg-white/90 transition " +
+    "shadow-[0_18px_60px_rgba(255,59,212,0.10)] overflow-hidden",
 
   bubbleOverlay:
     "absolute inset-0 pointer-events-none",
 };
+
+function ensureThemeStyles() {
+  if (document.getElementById("__themeStyles")) return;
+  const st = document.createElement("style");
+  st.id = "__themeStyles";
+  st.textContent = `
+    :root{
+      --accent: ${PALETTE.accent};
+      --accent2: ${PALETTE.accent2};
+      --accent-weak: rgba(255,59,212,0.26);
+      --accent-weak2: rgba(168,85,247,0.20);
+    }
+    body{
+      background: #fff;
+      color: ${PALETTE.ink};
+    }
+    body:before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255,59,212,0.16), transparent 58%),
+        radial-gradient(circle at 86% 18%, rgba(168,85,247,0.12), transparent 60%),
+        radial-gradient(circle at 50% 92%, rgba(255,59,212,0.10), transparent 55%);
+      mix-blend-mode: normal;
+      z-index:-1;
+    }
+    .bg-accent{ background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+    .chip-accent{ background: rgba(255,59,212,0.10); }
+    .text-ink{ color: ${PALETTE.ink}; }
+    .shadow-soft{ box-shadow: 0 22px 70px rgba(255,59,212,0.10); }
+    .neon-border{ border-color: rgba(255,59,212,0.28)!important; }
+    .neon-shadow{ box-shadow: 0 18px 60px rgba(255,59,212,0.12)!important; }
+    .glass{ backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+    .focus-neon:focus{ outline:none; box-shadow: 0 0 0 3px rgba(255,59,212,0.22); }
+  `;
+  document.head.appendChild(st);
+}
 
 function bubbleOverlayStyle() {
   return `background:
@@ -317,26 +357,26 @@ let drawerState = { open: false, kind: null, id: null, projectId: null, extra: {
 
 function setDrawerOpen(open) {
   drawerState.open = open;
-  const overlay = qs("#drawerOverlay");
-  const panel = qs("#drawerPanel");
+  const dock = qs("#drawerDock");
 
-  // DOM 없을 때도 상태는 정리
-  if (!overlay || !panel) {
-    if (!open) drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
+  if (dock) {
+    if (open) {
+      dock.classList.remove("hidden");
+      // dock content is created by renderDrawer()
+      // scroll into view for inline editing UX
+      try { dock.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+    } else {
+      dock.classList.add("hidden");
+      dock.innerHTML = "";
+      drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
+    }
     return;
   }
 
-  if (open) {
-    overlay.classList.remove("opacity-0", "pointer-events-none");
-    overlay.classList.add("opacity-100");
-    panel.classList.remove("translate-x-full");
-  } else {
-    overlay.classList.add("opacity-0", "pointer-events-none");
-    overlay.classList.remove("opacity-100");
-    panel.classList.add("translate-x-full");
-    drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
-  }
+  // DOM 없을 때도 상태는 정리
+  if (!open) drawerState = { open: false, kind: null, id: null, projectId: null, extra: {} };
 }
+
 function closeDrawer() {
   setDrawerOpen(false);
 }
@@ -348,7 +388,14 @@ async function safeUpdate(table, id, patch) {
   setDrawerStatus("저장 중...");
   const { error } = await supabase.from(table).update(patch).eq("id", id);
   if (error) {
-    setDrawerStatus(`저장 실패: ${error.message}`);
+    const msg = String(error.message || "");
+    if (msg.toLowerCase().includes("column") && (
+      msg.includes("spent_on") || msg.includes("paid_on")
+    )) {
+      setDrawerStatus(`저장 실패: ${msg} (Tip: budget_items에 spent_on, paid_on 컬럼을 추가하면 지출/지불 날짜 기록이 가능해.)`);
+      return false;
+    }
+    setDrawerStatus(`저장 실패: ${msg}`);
     return false;
   }
   setDrawerStatus("저장됨");
@@ -394,9 +441,27 @@ function renderIconSelect(id, valueKey) {
 async function renderDrawer() {
   const { kind, id, projectId } = drawerState;
 
+  const dock = qs("#drawerDock");
+  if (!dock) return;
+  // Ensure dock skeleton
+  if (!qs("#drawerTitle")) {
+    dock.innerHTML = `
+      <div class="${UI.bubble} neon-border neon-shadow glass">
+        <div class="${UI.bubbleOverlay}" style="${bubbleOverlayStyle()}"></div>
+        <div class="relative flex items-center justify-between gap-3">
+          <div id="drawerTitle"></div>
+          <button id="drawerClose" class="${UI.btnSm}">닫기</button>
+        </div>
+        <div class="relative mt-4" id="drawerContent"></div>
+        <div class="relative mt-3 ${UI.sub}" id="drawerStatus"></div>
+      </div>
+    `;
+  }
   const titleEl = qs("#drawerTitle");
   const contentEl = qs("#drawerContent");
   if (!titleEl || !contentEl) return;
+  const dc = qs("#drawerClose");
+  if (dc) dc.onclick = closeDrawer;
 
   if (kind === "timeline_event") {
     titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("calendar", true), true)}<span class="text-[13px] font-semibold text-slate-900">행사일정 편집</span></div>`;
@@ -770,7 +835,18 @@ async function renderDrawer() {
           </div>
         </div>
 
-        <div>
+        <div class="grid grid-cols-2 gap-3">
+  <div>
+    <div class="${UI.label} mb-1">지출일(선택)</div>
+    <input id="bd_spent" type="date" class="${UI.input}" value="${it.spent_on ?? ""}" />
+  </div>
+  <div>
+    <div class="${UI.label} mb-1">지불일(선택)</div>
+    <input id="bd_paid_on" type="date" class="${UI.input}" value="${it.paid_on ?? ""}" />
+  </div>
+</div>
+
+<div>
           <div class="${UI.label} mb-1">결제 마감(선택)</div>
           <input id="bd_due" type="date" class="${UI.input}" value="${it.due_date ?? ""}" />
         </div>
@@ -792,6 +868,8 @@ async function renderDrawer() {
     bindSave("#bd_est", (el) => safeUpdate("budget_items", id, { estimate: Number(el.value || 0) }));
     bindSave("#bd_act", (el) => safeUpdate("budget_items", id, { actual: Number(el.value || 0) }));
     bindSave("#bd_paid", (el) => safeUpdate("budget_items", id, { paid: Number(el.value || 0) }));
+    bindSave("#bd_spent", (el) => safeUpdate("budget_items", id, { spent_on: el.value || null }));
+    bindSave("#bd_paid_on", (el) => safeUpdate("budget_items", id, { paid_on: el.value || null }));
     bindSave("#bd_due", (el) => safeUpdate("budget_items", id, { due_date: el.value || null }));
     bindSave("#bd_notes", (el) => safeUpdate("budget_items", id, { notes: el.value || null }));
 
@@ -987,6 +1065,7 @@ const NAV = [
 ];
 
 function layoutShell(userEmail) {
+  ensureThemeStyles();
   app.innerHTML = `
   <div class="${UI.pageWrap}">
     <div class="${UI.shell}">
@@ -1024,26 +1103,12 @@ function layoutShell(userEmail) {
 
       <main class="${UI.card}">
         <div class="${UI.cardInner}">
+          <div id="drawerDock" class="mb-5 hidden"></div>
           <div id="page"></div>
         </div>
       </main>
 
-      <!-- Drawer -->
-      <div id="drawerOverlay" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition"></div>
-      <aside id="drawerPanel"
-        class="fixed right-0 top-0 h-full w-full md:w-[460px]
-               translate-x-full transition-transform duration-200
-               ${UI.card} rounded-none md:rounded-l-[28px]
-               border-l border-white/70 ring-1 ring-white/50">
-        <div class="p-5 sm:p-6 h-full flex flex-col">
-          <div class="flex items-center justify-between gap-3">
-            <div id="drawerTitle"></div>
-            <button id="drawerClose" class="${UI.btnSm}">닫기</button>
-          </div>
-          <div class="mt-4 flex-1 overflow-auto" id="drawerContent"></div>
-          <div class="mt-3 ${UI.sub}" id="drawerStatus"></div>
-        </div>
-      </aside>
+      
     </div>
   </div>`;
 
@@ -1062,9 +1127,9 @@ function layoutShell(userEmail) {
     render();
   };
 
-  // drawer close
-  qs("#drawerOverlay").onclick = closeDrawer;
-  qs("#drawerClose").onclick = closeDrawer;
+  // dock close
+  const dc = qs("#drawerClose");
+  if (dc) dc.onclick = closeDrawer;
 
   // ESC로 drawer 닫기(중복 방지)
   if (!window.__drawerEscBound) {
@@ -1076,6 +1141,7 @@ function layoutShell(userEmail) {
 }
 
 function loginView() {
+  ensureThemeStyles();
   app.innerHTML = `
   <div class="${UI.pageWrap}">
     <div class="${UI.card} w-full max-w-sm">
@@ -1139,7 +1205,7 @@ async function overviewPage(projectId) {
           ${iconBadge(iconSvg("checklist", true), true)}
         </div>
         <div class="mt-3 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
-          <div id="ov_ck_bar" class="h-full bg-[#6186E4]" style="width:0%"></div>
+          <div id="ov_ck_bar" class="h-full bg-accent" style="width:0%"></div>
         </div>
       </div>
 
@@ -1635,7 +1701,7 @@ async function timelinePage(projectId) {
 async function checklistPageV1(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    ${header("체크리스트", "체크는 바로, 편집은 버블 클릭", `<button id="addItem" class="${UI.btnPrimary}">추가</button>`)}
+    ${header("체크리스트", "체크는 바로, 편집은 상단에서", `<button id="addItem" class="${UI.btnPrimary}">추가</button>`)}
     <div class="mt-4 space-y-4" id="sections"></div>
   `;
 
@@ -1702,7 +1768,7 @@ async function checklistPageV1(projectId) {
                   <span class="${UI.pill}">${pct}%</span>
                 </div>
                 <div class="mt-2 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
-                  <div class="h-full bg-[#6186E4]" style="width:${pct}%;"></div>
+                  <div class="h-full bg-accent" style="width:${pct}%;"></div>
                 </div>
               </div>
               <button class="${UI.btnSm}" data-add="${s.id}">추가</button>
@@ -1921,7 +1987,7 @@ async function checklistPageV2(projectId) {
                     ${t.due_date ? `<span class="${UI.pill}">${escapeHtml(t.due_date)}</span>` : ``}
                   </div>
                   <div class="mt-2 h-2 rounded-full bg-white/60 border border-white/70 overflow-hidden">
-                    <div class="h-full bg-[#6186E4]" style="width:${pct}%;"></div>
+                    <div class="h-full bg-accent" style="width:${pct}%;"></div>
                   </div>
                 </div>
               </div>
@@ -2111,7 +2177,7 @@ async function checklistPage(projectId) {
 async function budgetPage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    ${header("예산", "버블 클릭 → 우측에서 상세 편집", `<button id="addBudget" class="${UI.btnPrimary}">추가</button>`)}
+    ${header("예산", "클릭해서 상단에서 바로 편집", `<button id="addBudget" class="${UI.btnPrimary}">추가</button>`)}
     <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="summary"></div>
     <div class="mt-4 space-y-4" id="cats"></div>
   `;
@@ -2142,11 +2208,32 @@ async function budgetPage(projectId) {
       return;
     }
 
-    const { data: items, error: ie } = await supabase
-      .from("budget_items")
-      .select("id,category_id,item_name,estimate,actual,paid,sort_order")
-      .eq("project_id", projectId)
-      .order("sort_order");
+    // Try extended columns for spend/paid dates (optional). If missing, fallback.
+    let items = [];
+    let ie = null;
+    {
+      const try1 = await supabase
+        .from("budget_items")
+        .select("id,category_id,item_name,estimate,actual,paid,sort_order,spent_on,paid_on,due_date,notes")
+        .eq("project_id", projectId)
+        .order("sort_order");
+      if (!try1.error) {
+        items = try1.data || [];
+      } else {
+        const msg = String(try1.error.message || "");
+        if (msg.toLowerCase().includes("column") || msg.toLowerCase().includes("could not find")) {
+          const try2 = await supabase
+            .from("budget_items")
+            .select("id,category_id,item_name,estimate,actual,paid,sort_order")
+            .eq("project_id", projectId)
+            .order("sort_order");
+          ie = try2.error;
+          items = try2.data || [];
+        } else {
+          ie = try1.error;
+        }
+      }
+    }
 
     if (ie) {
       qs("#cats").innerHTML = isMissingTable(ie)
@@ -2210,6 +2297,8 @@ async function budgetPage(projectId) {
                                   <span class="${UI.pill}">예상 <b>${moneyFmt(it.estimate)}</b></span>
                                   <span class="${UI.pill}">실제 <b>${moneyFmt(it.actual)}</b></span>
                                   <span class="${UI.pill}">지불 <b>${moneyFmt(it.paid)}</b></span>
+                                  ${it.spent_on ? `<span class="${UI.pill}">지출 ${escapeHtml(it.spent_on)}</span>` : ``}
+                                  ${it.paid_on ? `<span class="${UI.pill}">지불일 ${escapeHtml(it.paid_on)}</span>` : ``}
                                   <span class="${UI.pillStrong}">잔액 <b>${moneyFmt(remaining)}</b></span>
                                 </div>
                               </div>
@@ -2302,7 +2391,7 @@ async function budgetPage(projectId) {
 async function notesPage(projectId) {
   const page = qs("#page");
   page.innerHTML = `
-    ${header("메모", "버블 클릭 → 우측에서 편집", `<button id="nt_add" class="${UI.btnPrimary}">추가</button>`)}
+    ${header("메모", "클릭해서 상단에서 바로 편집", `<button id="nt_add" class="${UI.btnPrimary}">추가</button>`)}
     <div class="mt-4 space-y-3" id="nt_list"></div>
   `;
 
