@@ -70,7 +70,8 @@ const PALETTE = {
 
 // ---------- Icon system // (Iconly-ish: thin, round, gradient stroke) ----------
  // (Iconly-ish: thin, round, gradient stroke) ----------
-function iconSvg(name, active = false) {
+function iconSvg(name, active) {
+  active = !!active;{
   const strokeA = active ? PALETTE.accent : "rgba(15,23,42,0.78)";
   const strokeB = active ? PALETTE.accent2 : "rgba(15,23,42,0.55)";
 
@@ -298,7 +299,14 @@ function mountConfirmModal() {
   document.body.appendChild(el);
 }
 
-function confirmModal({ title, message, okText = "확인", cancelText = "취소", danger = false } = {}) {
+function confirmModal(opts) {
+  opts = opts || {};
+  var title = opts.title || "확인";
+  var message = opts.message || "정말 진행할까?";
+  var okText = opts.okText || "확인";
+  var cancelText = opts.cancelText || "취소";
+  var danger = !!opts.danger;
+
   mountConfirmModal();
 
   const overlay = qs("#confirmOverlay");
@@ -838,7 +846,7 @@ async function renderDrawer() {
         <div class="grid grid-cols-2 gap-3">
   <div>
     <div class="${UI.label} mb-1">지출일(선택)</div>
-    <input id="bd_spent" type="date" class="${UI.input}" value="${it.spent_on ?? ""}" />
+    <input id="bd_spent" type="date" class="${UI.input}" value="${it.spent_on || ""}" />
   </div>
   <div>
     <div class="${UI.label} mb-1">지불일(선택)</div>
