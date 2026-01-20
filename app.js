@@ -57,6 +57,20 @@ async function ensureAuthFromUrl() {
     location.hash = "#/timeline";
   }
 }
+const UI = {
+  pageWrap: "min-h-screen flex items-center justify-center p-4 md:p-10",
+  shell: "w-full max-w-5xl grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4",
+  card: "backdrop-blur-xl bg-white/70 border border-white/60 shadow-soft rounded-3xl",
+  cardInner: "p-4 md:p-6",
+  navLink: "block px-3 py-2 rounded-2xl hover:bg-white/60 transition text-sm",
+  navLinkActive: "bg-white/70 font-semibold",
+  btn: "rounded-full px-4 py-2 text-sm border border-white/60 bg-white/60 hover:bg-white/80 transition shadow-sm",
+  btnPrimary:
+    "rounded-full px-4 py-2 text-sm text-white shadow-sm " +
+    "bg-gradient-to-r from-brand-500 to-fuchsia-500 hover:from-brand-600 hover:to-fuchsia-600 transition",
+  pill: "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs bg-white/60 border border-white/60",
+  input: "w-full rounded-2xl border border-white/60 bg-white/70 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500/30",
+};
 
 async function getProjectId() {
   const { data, error } = await supabase
@@ -72,21 +86,47 @@ async function getProjectId() {
 
 function layoutShell(userEmail) {
   app.innerHTML = `
-  <div class="min-h-screen grid grid-cols-1 md:grid-cols-[260px_1fr]">
-    <aside class="border-b md:border-b-0 md:border-r p-4">
-      <div class="font-semibold text-lg">Wedding Planner</div>
-      <div class="text-xs opacity-70 mt-1">${escapeHtml(userEmail)}</div>
-      <nav class="mt-4 space-y-2 text-sm">
-        <a class="block hover:underline" href="#/timeline">행사일정</a>
-        <a class="block hover:underline" href="#/checklist">체크리스트</a>
-        <a class="block hover:underline" href="#/budget">예산</a>
-      </nav>
-      <button id="logout" class="mt-6 text-sm border rounded-xl px-3 py-2">로그아웃</button>
-    </aside>
-    <main class="p-4 md:p-6">
-      <div id="page"></div>
-    </main>
+  <div class="${UI.pageWrap}">
+    <div class="${UI.shell}">
+      <aside class="${UI.card}">
+        <div class="${UI.cardInner}">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-lg font-semibold tracking-tight">Wedding Planner</div>
+              <div class="text-xs opacity-70 mt-1">${escapeHtml(userEmail)}</div>
+            </div>
+            <div class="${UI.pill}">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+              Online
+            </div>
+          </div>
+
+          <nav class="mt-5 space-y-2" id="nav">
+            <a class="${UI.navLink}" data-route="/timeline" href="#/timeline">행사일정</a>
+            <a class="${UI.navLink}" data-route="/checklist" href="#/checklist">체크리스트</a>
+            <a class="${UI.navLink}" data-route="/budget" href="#/budget">예산</a>
+          </nav>
+
+          <div class="mt-6 flex items-center justify-between">
+            <button id="logout" class="${UI.btn}">로그아웃</button>
+            <span class="text-xs opacity-60">Auto-save</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="${UI.card}">
+        <div class="${UI.cardInner}">
+          <div id="page"></div>
+        </div>
+      </main>
+    </div>
   </div>`;
+
+  // active 메뉴 표시
+  const r = (location.hash || "#/timeline").replace("#", "");
+  document.querySelectorAll("#nav a[data-route]").forEach((a) => {
+    if (a.getAttribute("data-route") === r) a.classList.add(...UI.navLinkActive.split(" "));
+  });
 
   qs("#logout").onclick = async () => {
     await supabase.auth.signOut();
@@ -94,30 +134,36 @@ function layoutShell(userEmail) {
   };
 }
 
+
 function loginView() {
   app.innerHTML = `
-  <main class="min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-sm space-y-3">
-      <h1 class="text-2xl font-semibold">로그인</h1>
-      <input id="email" class="w-full border rounded-xl p-3" placeholder="email@example.com" />
-      <button id="send" class="w-full rounded-xl p-3 border">매직 링크 보내기</button>
-      <p id="msg" class="text-sm opacity-80"></p>
+  <div class="${UI.pageWrap}">
+    <div class="${UI.card} w-full max-w-sm">
+      <div class="${UI.cardInner} space-y-4">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">로그인</h1>
+          <p class="text-sm opacity-70 mt-1">매직 링크로 바로 들어와.</p>
+        </div>
+
+        <input id="email" class="${UI.input}" placeholder="email@example.com" />
+        <button id="send" class="${UI.btnPrimary} w-full">매직 링크 보내기</button>
+
+        <p id="msg" class="text-sm opacity-80"></p>
+      </div>
     </div>
-  </main>`;
+  </div>`;
 
   qs("#send").onclick = async () => {
     const email = qs("#email").value.trim();
     if (!email) return;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        // GitHub Pages(레포 하위경로)까지 포함해서 redirect
-        emailRedirectTo: location.origin + location.pathname,
-      },
+      options: { emailRedirectTo: location.origin + location.pathname },
     });
     qs("#msg").textContent = error ? error.message : "메일함 확인해줘!";
   };
 }
+
 
 async function ensureDefaultDay(projectId) {
   const { data } = await supabase
