@@ -38,25 +38,26 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function isMissingTable(err) {
-  const code = String(err?.code || "");         // Supabase가 주는 PG code
+function isMissingTable(err)function isMissingTable(err) {
+  const code = String(err?.code || "");
   const msg = String(err?.message || "").toLowerCase();
 
-  // 진짜 "테이블 없음"만 잡기
+  // ✅ 진짜 "테이블 없음"만
   if (code === "42P01") return true; // undefined_table
 
-  // PostgREST / Supabase 메시지 케이스들
+  // PostgREST가 주는 케이스들
   if (msg.includes("does not exist")) return true;
   if (msg.includes("undefined_table")) return true;
 
   // "relation xxx does not exist" 같은 케이스만
   if (msg.includes("relation") && msg.includes("does not exist")) return true;
 
-  // schema cache 관련(테이블 만들어놓고 API가 못봄)
+  // (테이블 막 만들었을 때) schema cache에서 못 찾는 케이스
   if (msg.includes("schema cache") && msg.includes("could not find") && msg.includes("table")) return true;
 
   return false;
 }
+
 
 
 function moneyFmt(x) {
