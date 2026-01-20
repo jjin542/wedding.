@@ -868,7 +868,7 @@ async function budgetPage(projectId) {
     <div class="mt-4 space-y-4" id="cats"></div>
   `;
 
-  async function ensureTemplate() {
+  //async function ensureTemplate() {
     const { data } = await supabase
       .from("budget_categories")
       .select("id")
@@ -1033,210 +1033,6 @@ async function budgetPage(projectId) {
   await load();
 }
 
-
-  async function ensureTemplate() {
-    const { data } = await supabase
-      .from("budget_categories")
-      .select("id")
-      .eq("project_id", projectId)
-      .limit(1);
-
-    if (data && data.length > 0) return;
-
-    const defaults = ["예식장", "스드메", "스냅/영상", "부케/플라워", "청첩장", "기타"];
-    await supabase.from("budget_categories").insert(
-      defaults.map((t, i) => ({ project_id: projectId, title: t, sort_order: i }))
-    );
-  }
-
-  function n(x) {
-    const v = Number(x);
-    return Number.isFinite(v) ? v : 0;
-  }
-  function fmt(x) {
-    return Math.round(n(x)).toLocaleString("ko-KR");
-  }
-
-  async function load() {
-    await ensureTemplate();
-
-    const { data: cats, error: ce } = await supabase
-      .from("budget_categories")
-      .select("id,title,sort_order")
-      .eq("project_id", projectId)
-      .order("sort_order", { ascending: true });
-
-    if (ce) {
-      qs("#cats").innerHTML = `<p class="text-sm text-red-600">${escapeHtml(ce.message)}</p>`;
-      return;
-    }
-
-    const { data: items, error: ie } = await supabase
-      .from("budget_items")
-      .select("id,category_id,item_name,estimate,actual,paid,sort_order")
-      .eq("project_id", projectId)
-      .order("sort_order", { ascending: true });
-
-    if (ie) {
-      qs("#cats").innerHTML = `<p class="text-sm text-red-600">${escapeHtml(ie.message)}</p>`;
-      return;
-    }
-
-    const totals = (items || []).reduce(
-      (acc, it) => {
-        acc.estimate += n(it.estimate);
-        acc.actual += n(it.actual);
-        acc.paid += n(it.paid);
-        return acc;
-      },
-      { estimate: 0, actual: 0, paid: 0 }
-    );
-    const unpaid = Math.max(0, totals.actual - totals.paid);
-
-    qs("#summary").innerHTML = `
-      <div class="border rounded-2xl p-3"><div class="text-xs opacity-70">예상합계</div><div class="text-lg font-semibold">${fmt(totals.estimate)}원</div></div>
-      <div class="border rounded-2xl p-3"><div class="text-xs opacity-70">실제합계</div><div class="text-lg font-semibold">${fmt(totals.actual)}원</div></div>
-      <div class="border rounded-2xl p-3"><div class="text-xs opacity-70">지불완료</div><div class="text-lg font-semibold">${fmt(totals.paid)}원</div></div>
-      <div class="border rounded-2xl p-3"><div class="text-xs opacity-70">미지불</div><div class="text-lg font-semibold">${fmt(unpaid)}원</div></div>
-    `;
-
-    const byCat = new Map();
-    (items || []).forEach((it) => {
-      if (!byCat.has(it.category_id)) byCat.set(it.category_id, []);
-      byCat.get(it.category_id).push(it);
-    });
-
-    qs("#cats").innerHTML = (cats || []).map((c) => {
-      const list = byCat.get(c.id) || [];
-      return `
-        <div class="border rounded-2xl p-3">
-          <div class="flex items-center justify-between">
-            <div class="font-semibold">${escapeHtml(c.title)}</div>
-            <button class="text-sm border rounded-xl px-3 py-2" data-add="${c.id}">+ 이 카테고리에 추가</button>
-          </div>
-          <div class="mt-3 space-y-2">
-            ${list.length === 0 ? `<div class="text-sm opacity-70">항목이 없어.</div>` :
-              list.map((it) => {
-                const remaining = Math.max(0, n(it.actual) - n(it.paid));
-                return `
-                  <div class="border rounded-xl p-2">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="font-medium">${escapeHtml(it.item_name)}</div>
-                      <div class="flex gap-2">
-                        <button class="text-xs border rounded-lg px-2 py-1" data-edit="${it.id}">수정</button>
-                        <button class="text-xs border rounded-lg px-2 py-1" data-del="${it.id}">삭제</button>
-                      </div>
-                    </div>
-                    <div class="mt-2 text-sm opacity-80 grid grid-cols-2 md:grid-cols-4 gap-2">
-                      <div>예상: <b>${fmt(it.estimate)}</b></div>
-                      <div>실제: <b>${fmt(it.actual)}</b></div>
-                      <div>지불: <b>${fmt(it.paid)}</b></div>
-                      <div>잔액: <b>${fmt(remaining)}</b></div>
-                    </div>
-                  </div>
-                `;
-              }).join("")
-            }
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    qs("#cats").querySelectorAll("button[data-add]").forEach((btn) => {
-      btn.onclick = async () => {
-        const categoryId = btn.dataset.add;
-        const name = prompt("항목 이름?");
-        if (!name) return;
-        await supabase.from("budget_items").insert({
-          project_id: projectId,
-          category_id: categoryId,
-          item_name: name,
-          estimate: 0,
-          actual: 0,
-          paid: 0,
-          sort_order: Date.now(),
-        });
-      };
-    });
-
-    qs("#cats").querySelectorAll("button[data-edit]").forEach((btn) => {
-      btn.onclick = async () => {
-        const id = btn.dataset.edit;
-        const cur = (items || []).find((x) => x.id === id);
-        if (!cur) return;
-
-        const item_name = prompt("항목 이름", cur.item_name) ?? cur.item_name;
-        const estimate = Number(prompt("예상 금액(숫자)", String(cur.estimate)) ?? cur.estimate);
-        const actual = Number(prompt("실제 금액(숫자)", String(cur.actual)) ?? cur.actual);
-        const paid = Number(prompt("지불 금액(숫자)", String(cur.paid)) ?? cur.paid);
-
-        await supabase.from("budget_items")
-          .update({
-            item_name,
-            estimate: n(estimate),
-            actual: n(actual),
-            paid: n(paid),
-          })
-          .eq("id", id);
-      };
-    });
-
-    qs("#cats").querySelectorAll("button[data-del]").forEach((btn) => {
-      btn.onclick = async () => {
-        const id = btn.dataset.del;
-        if (!confirm("삭제할까?")) return;
-        await supabase.from("budget_items").delete().eq("id", id);
-      };
-    });
-  }
-
-  qs("#addCat").onclick = async () => {
-    const title = prompt("카테고리 이름?");
-    if (!title) return;
-    await supabase.from("budget_categories").insert({
-      project_id: projectId,
-      title,
-      sort_order: Date.now(),
-    });
-  };
-
-  qs("#addBudget").onclick = async () => {
-    const name = prompt("항목 이름?");
-    if (!name) return;
-
-    const { data: cats } = await supabase
-      .from("budget_categories")
-      .select("id")
-      .eq("project_id", projectId)
-      .order("sort_order", { ascending: true })
-      .limit(1);
-
-    const categoryId = cats?.[0]?.id;
-    if (!categoryId) return;
-
-    await supabase.from("budget_items").insert({
-      project_id: projectId,
-      category_id: categoryId,
-      item_name: name,
-      estimate: 0,
-      actual: 0,
-      paid: 0,
-      sort_order: Date.now(),
-    });
-  };
-
-  const ch = supabase
-    .channel("budget")
-    .on("postgres_changes", { event: "*", schema: "public", table: "budget_categories", filter: `project_id=eq.${projectId}` }, load)
-    .on("postgres_changes", { event: "*", schema: "public", table: "budget_items", filter: `project_id=eq.${projectId}` }, load)
-    .subscribe();
-
-  window.__cleanup?.();
-  window.__cleanup = () => supabase.removeChannel(ch);
-
-  await load();
-}
-
 async function render() {
   await ensureAuthFromUrl();
 
@@ -1263,6 +1059,11 @@ async function render() {
 window.addEventListener("hashchange", render);
 render();
   // drawer close handlers
+  // ✅ drawer close handlers (여기서만!)
   qs("#drawerOverlay").onclick = closeDrawer;
   qs("#drawerClose").onclick = closeDrawer;
 
+  // ESC로 닫기(선택)
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDrawer();
+  }, { once: true });
