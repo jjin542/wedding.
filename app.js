@@ -60,6 +60,45 @@ function hhmmToTime(hhmm) {
   if (!hhmm) return null;
   return hhmm.length === 5 ? `${hhmm}:00` : hhmm;
 }
+// ---------- Calendar helpers ----------
+function pad2(x) {
+  return String(x).padStart(2, "0");
+}
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const day = pad2(d.getDate());
+  return `${y}-${m}-${day}`;
+}
+function startOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function addMonths(d, n) {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1);
+}
+function endOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+function monthLabel(d) {
+  return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}`;
+}
+function clampDateRangeForGrid(monthStart) {
+  // 6주(42칸) 고정 그리드 (일요일 시작)
+  const first = startOfMonth(monthStart);
+  const lead = first.getDay(); // 0=Sun
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate() - lead);
+
+  const last = endOfMonth(monthStart);
+  const tail = 41 - (lead + last.getDate() - 1);
+  const gridEnd = new Date(last);
+  gridEnd.setDate(last.getDate() + tail);
+
+  return { gridStart, gridEnd };
+}
+
+// 달력 페이지 상태: 9개월 기준 시작 month
+let __calendarBaseMonth = startOfMonth(new Date());
 
 // ---------- Palette (White + Neon Pink Glass) ----------
 const PALETTE = {
@@ -471,6 +510,212 @@ async function renderDrawer() {
       </div>
     `;
   }
+
+    if (kind === "calendar_event") {
+    titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("calendar", true), true)}<span class="text-[13px] font-semibold text-slate-900">달력 일정 편집</span></div>`;
+
+    const { data: ev, error } = await supabase.from("calendar_events").select("*").eq("id", id).single();
+    if (error) {
+      contentEl.innerHTML = isMissingTable(error)
+        ? missingTableCard("calendar_events")
+        : `<div class="text-sm text-rose-700">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex flex-wrap gap-2">
+          <span class="${UI.pillStrong}">${escapeHtml(ev.event_date)}</span>
+          ${ev.all_day ? `<span class="${UI.pillStrong}">하루종일</span>` : `<span class="${UI.pill}">시간 ${escapeHtml(timeToHHMM(ev.start_time))}</span>`}
+          ${!ev.all_day ? `<span class="${UI.pill}">소요 <b class="font-semibold">${ev.duration_min || 0}m</b></span>` : ``}
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">제목</div>
+          <input id="cal_title" class="${UI.input}" value="${escapeHtml(ev.title || "")}" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="${UI.label} mb-1">날짜</div>
+            <input id="cal_date" type="date" class="${UI.input}" value="${ev.event_date ?? ""}" />
+          </div>
+          <div>
+            <div class="${UI.label} mb-1">하루종일</div>
+            <label class="flex items-center gap-2 text-[12.5px] text-slate-900/85 mt-2">
+              <input id="cal_all" type="checkbox" ${ev.all_day ? "checked" : ""} />
+              all-day
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="${UI.label} mb-1">시작시간</div>
+            <input id="cal_time" type="time" class="${UI.input}" value="${escapeHtml(timeToHHMM(ev.start_time))}" ${ev.all_day ? "disabled" : ""} />
+          </div>
+          <div>
+            <div class="${UI.label} mb-1">소요(분)</div>
+            <input id="cal_dur" type="number" class="${UI.input}" value="${ev.duration_min ?? 30}" min="0" ${ev.all_day ? "disabled" : ""} />
+          </div>
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">장소(선택)</div>
+          <input id="cal_loc" class="${UI.input}" value="${escapeHtml(ev.location || "")}" />
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="cal_notes" class="${UI.textarea}" rows="5">${escapeHtml(ev.notes || "")}</textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button id="cal_delete" class="${UI.btnDanger}">삭제</button>
+          <button id="cal_close" class="${UI.btnPrimary}">완료</button>
+        </div>
+      </div>
+    `;
+
+    bindSave("#cal_title", (el) => safeUpdate("calendar_events", id, { title: el.value }));
+    bindSave("#cal_date", (el) => safeUpdate("calendar_events", id, { event_date: el.value || null }));
+    bindSave("#cal_loc", (el) => safeUpdate("calendar_events", id, { location: el.value || null }));
+    bindSave("#cal_notes", (el) => safeUpdate("calendar_events", id, { notes: el.value || null }));
+
+    bindSave("#cal_all", async (el) => {
+      const nextAll = el.checked;
+      await safeUpdate("calendar_events", id, {
+        all_day: nextAll,
+        start_time: nextAll ? null : (ev.start_time || "09:00:00"),
+        duration_min: nextAll ? 0 : (ev.duration_min || 30),
+      });
+      await renderDrawer(); // disabled 상태 반영
+    });
+
+    bindSave("#cal_time", (el) => safeUpdate("calendar_events", id, { start_time: hhmmToTime(el.value) }));
+    bindSave("#cal_dur", (el) => safeUpdate("calendar_events", id, { duration_min: Number(el.value || 0) }));
+
+    qs("#cal_close").onclick = closeDrawer;
+    qs("#cal_delete").onclick = async () => {
+      const ok = await confirmModal({
+        title: "일정 삭제",
+        message: "이 일정을 삭제할까? 되돌릴 수 없어.",
+        okText: "삭제",
+        cancelText: "취소",
+        danger: true,
+      });
+      if (!ok) return;
+      await supabase.from("calendar_events").delete().eq("id", id);
+      closeDrawer();
+    };
+
+    setDrawerStatus("열림");
+    return;
+  }
+
+
+    if (kind === "calendar_event") {
+    titleEl.innerHTML = `<div class="flex items-center gap-2">${iconBadge(iconSvg("calendar", true), true)}<span class="text-[13px] font-semibold text-slate-900">달력 일정 편집</span></div>`;
+
+    const { data: ev, error } = await supabase.from("calendar_events").select("*").eq("id", id).single();
+    if (error) {
+      contentEl.innerHTML = isMissingTable(error)
+        ? missingTableCard("calendar_events")
+        : `<div class="text-sm text-rose-700">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex flex-wrap gap-2">
+          <span class="${UI.pillStrong}">${escapeHtml(ev.event_date)}</span>
+          ${ev.all_day ? `<span class="${UI.pillStrong}">하루종일</span>` : `<span class="${UI.pill}">시간 ${escapeHtml(timeToHHMM(ev.start_time))}</span>`}
+          ${!ev.all_day ? `<span class="${UI.pill}">소요 <b class="font-semibold">${ev.duration_min || 0}m</b></span>` : ``}
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">제목</div>
+          <input id="cal_title" class="${UI.input}" value="${escapeHtml(ev.title || "")}" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="${UI.label} mb-1">날짜</div>
+            <input id="cal_date" type="date" class="${UI.input}" value="${ev.event_date ?? ""}" />
+          </div>
+          <div>
+            <div class="${UI.label} mb-1">하루종일</div>
+            <label class="flex items-center gap-2 text-[12.5px] text-slate-900/85 mt-2">
+              <input id="cal_all" type="checkbox" ${ev.all_day ? "checked" : ""} />
+              all-day
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="${UI.label} mb-1">시작시간</div>
+            <input id="cal_time" type="time" class="${UI.input}" value="${escapeHtml(timeToHHMM(ev.start_time))}" ${ev.all_day ? "disabled" : ""} />
+          </div>
+          <div>
+            <div class="${UI.label} mb-1">소요(분)</div>
+            <input id="cal_dur" type="number" class="${UI.input}" value="${ev.duration_min ?? 30}" min="0" ${ev.all_day ? "disabled" : ""} />
+          </div>
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">장소(선택)</div>
+          <input id="cal_loc" class="${UI.input}" value="${escapeHtml(ev.location || "")}" />
+        </div>
+
+        <div>
+          <div class="${UI.label} mb-1">메모(선택)</div>
+          <textarea id="cal_notes" class="${UI.textarea}" rows="5">${escapeHtml(ev.notes || "")}</textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button id="cal_delete" class="${UI.btnDanger}">삭제</button>
+          <button id="cal_close" class="${UI.btnPrimary}">완료</button>
+        </div>
+      </div>
+    `;
+
+    bindSave("#cal_title", (el) => safeUpdate("calendar_events", id, { title: el.value }));
+    bindSave("#cal_date", (el) => safeUpdate("calendar_events", id, { event_date: el.value || null }));
+    bindSave("#cal_loc", (el) => safeUpdate("calendar_events", id, { location: el.value || null }));
+    bindSave("#cal_notes", (el) => safeUpdate("calendar_events", id, { notes: el.value || null }));
+
+    bindSave("#cal_all", async (el) => {
+      const nextAll = el.checked;
+      await safeUpdate("calendar_events", id, {
+        all_day: nextAll,
+        start_time: nextAll ? null : (ev.start_time || "09:00:00"),
+        duration_min: nextAll ? 0 : (ev.duration_min || 30),
+      });
+      await renderDrawer(); // disabled 상태 반영
+    });
+
+    bindSave("#cal_time", (el) => safeUpdate("calendar_events", id, { start_time: hhmmToTime(el.value) }));
+    bindSave("#cal_dur", (el) => safeUpdate("calendar_events", id, { duration_min: Number(el.value || 0) }));
+
+    qs("#cal_close").onclick = closeDrawer;
+    qs("#cal_delete").onclick = async () => {
+      const ok = await confirmModal({
+        title: "일정 삭제",
+        message: "이 일정을 삭제할까? 되돌릴 수 없어.",
+        okText: "삭제",
+        cancelText: "취소",
+        danger: true,
+      });
+      if (!ok) return;
+      await supabase.from("calendar_events").delete().eq("id", id);
+      closeDrawer();
+    };
+
+    setDrawerStatus("열림");
+    return;
+  }
+
   const titleEl = qs("#drawerTitle");
   const contentEl = qs("#drawerContent");
   if (!titleEl || !contentEl) return;
@@ -1072,6 +1317,8 @@ const NAV = [
   { route: "/ceremony", label: "예식", icon: "sparkle" },
   { route: "/vendors", label: "업체", icon: "bag" },
   { route: "/timeline", label: "행사일정", icon: "calendar" },
+  { route: "/calendar", label: "달력", icon: "calendar" },
+
   { route: "/checklist", label: "체크리스트", icon: "checklist" },
   { route: "/budget", label: "예산", icon: "wallet" },
   { route: "/notes", label: "메모", icon: "note" },
@@ -1562,6 +1809,148 @@ async function timelinePage(projectId) {
     qs("#events").innerHTML = `<div class="text-sm text-rose-700">${escapeHtml(de.message)}</div>`;
     return;
   }
+  async function calendarPage(projectId) {
+  const page = qs("#page");
+
+  page.innerHTML = `
+    ${header("달력", "9개월 그리드 · 날짜별 여러 일정", `
+      <div class="flex items-center gap-2">
+        <button id="cal_prev" class="${UI.btn}">←</button>
+        <button id="cal_today" class="${UI.btn}">오늘</button>
+        <button id="cal_next" class="${UI.btn}">→</button>
+      </div>
+    `)}
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4" id="cal_grid"></div>
+  `;
+
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+
+  async function loadAndRender() {
+    const months = Array.from({ length: 9 }, (_, i) => addMonths(__calendarBaseMonth, i));
+
+    const firstMonth = months[0];
+    const lastMonth = months[8];
+
+    const r1 = clampDateRangeForGrid(firstMonth);
+    const r2 = clampDateRangeForGrid(lastMonth);
+
+    const startIso = toISODate(r1.gridStart);
+    const endIso = toISODate(r2.gridEnd);
+
+    const { data, error } = await supabase
+      .from("calendar_events")
+      .select("id,event_date,all_day,start_time,title,sort_order")
+      .eq("project_id", projectId)
+      .gte("event_date", startIso)
+      .lte("event_date", endIso)
+      .order("event_date", { ascending: true })
+      .order("all_day", { ascending: false })
+      .order("start_time", { ascending: true })
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      qs("#cal_grid").innerHTML = isMissingTable(error)
+        ? missingTableCard("calendar_events")
+        : `<div class="text-sm text-rose-700">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    const byDate = new Map();
+    (data || []).forEach((e) => {
+      if (!byDate.has(e.event_date)) byDate.set(e.event_date, []);
+      byDate.get(e.event_date).push(e);
+    });
+
+    const todayIso = toISODate(new Date());
+
+    function renderMonth(m) {
+      const ms = startOfMonth(m);
+      const { gridStart } = clampDateRangeForGrid(ms);
+
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate() + i);
+
+        const iso = toISODate(d);
+        const inMonth = d.getMonth() === ms.getMonth();
+        const isToday = iso === todayIso;
+
+        const evs = byDate.get(iso) || [];
+        const top = evs.slice(0, 2);
+        const rest = Math.max(0, evs.length - top.length);
+
+        cells.push(`
+          <button data-date="${iso}"
+            class="text-left rounded-[16px] p-2 border border-white/70 bg-white/55 hover:bg-white/80 transition
+                   ${inMonth ? "" : "opacity-45"}
+                   ${isToday ? "ring-2 ring-[rgba(255,59,212,0.22)]" : ""}">
+            <div class="flex items-start justify-between">
+              <div class="text-[12px] font-semibold text-slate-900">${d.getDate()}</div>
+              ${evs.length ? `<div class="w-2 h-2 rounded-full bg-accent"></div>` : `<div class="w-2 h-2"></div>`}
+            </div>
+
+            <div class="mt-1 space-y-1">
+              ${
+                top.map((e) => `
+                  <div class="text-[10.5px] truncate ${e.all_day ? "font-semibold" : ""}">
+                    ${e.all_day ? "ALL" : escapeHtml(timeToHHMM(e.start_time))} · ${escapeHtml(e.title)}
+                  </div>
+                `).join("")
+              }
+              ${rest ? `<div class="text-[10.5px] text-slate-700/70">+${rest}개</div>` : ``}
+            </div>
+          </button>
+        `);
+      }
+
+      return `
+        <div class="${UI.bubble}">
+          <div class="${UI.bubbleOverlay}" style="${bubbleOverlayStyle()}"></div>
+          <div class="relative flex items-center justify-between">
+            <div class="text-[14px] font-semibold text-slate-900">${monthLabel(ms)}</div>
+            <span class="${UI.sub}">9개월</span>
+          </div>
+
+          <div class="relative mt-3 grid grid-cols-7 gap-1">
+            ${DOW.map((x) => `<div class="text-[11px] text-slate-700/70 text-center py-1">${x}</div>`).join("")}
+            ${cells.join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    qs("#cal_grid").innerHTML = months.map(renderMonth).join("");
+
+    qsa("#cal_grid button[data-date]").forEach((btn) => {
+      btn.onclick = () => openDrawer("calendar_day", { id: btn.dataset.date, projectId, date: btn.dataset.date });
+    });
+  }
+
+  qs("#cal_prev").onclick = () => {
+    __calendarBaseMonth = addMonths(__calendarBaseMonth, -9);
+    loadAndRender();
+  };
+  qs("#cal_next").onclick = () => {
+    __calendarBaseMonth = addMonths(__calendarBaseMonth, 9);
+    loadAndRender();
+  };
+  qs("#cal_today").onclick = () => {
+    __calendarBaseMonth = startOfMonth(new Date());
+    loadAndRender();
+  };
+
+  const ch = supabase
+    .channel("calendar_events")
+    .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events", filter: `project_id=eq.${projectId}` }, loadAndRender)
+    .subscribe();
+
+  window.__cleanup?.();
+  window.__cleanup = () => supabase.removeChannel(ch);
+
+  await loadAndRender();
+}
+
 
   days = days || [];
   if (days.length === 0) {
@@ -2522,6 +2911,8 @@ async function render() {
   if (r === "/ceremony") return ceremonyPage(projectId);
   if (r === "/vendors") return vendorsPage(projectId);
   if (r === "/timeline") return timelinePage(projectId);
+  if (r === "/calendar") return calendarPage(projectId);
+
   if (r === "/checklist") return checklistPage(projectId);
   if (r === "/budget") return budgetPage(projectId);
   if (r === "/notes") return notesPage(projectId);
